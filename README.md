@@ -18,7 +18,9 @@ This project uses **Double Machine Learning** to estimate the causal effect of p
 demand while controlling for these confounders, and then uses the estimates to
 recommend prices.
 
-Full problem statement, causal diagram and assumptions: [docs/problem_statement.md](docs/problem_statement.md)
+- Problem statement, causal diagram and assumptions: [docs/problem_statement.md](docs/problem_statement.md)
+- Week-wise plan and milestones: [docs/roadmap.md](docs/roadmap.md)
+- Papers, libraries and data sources: [docs/references.md](docs/references.md)
 
 ## Approach (planned)
 
