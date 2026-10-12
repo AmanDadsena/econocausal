@@ -43,7 +43,14 @@ recommend prices.
   around 1M transactions from a UK online retailer, 2009-2011.
 - A synthetic dataset generated in this repo with a known true elasticity.
 
-Raw data is not committed to the repo. Download steps will be added under `src/econocausal/data/`.
+Raw data is not committed to the repo. To get it:
+
+```bash
+python -m econocausal.data.download   # download and extract the Excel file
+python -m econocausal.data.load       # convert it to parquet for fast loading
+```
+
+Column descriptions and data quality notes: [docs/data_dictionary.md](docs/data_dictionary.md)
 
 ## Tech stack
 
@@ -67,7 +74,7 @@ econocausal/
 
 ## Setup
 
-Python 3.11 is recommended (some causal inference libraries don't support the newest Python versions yet).
+Requires Python 3.12 or newer (developed on Python 3.14).
 
 ```bash
 python -m venv .venv

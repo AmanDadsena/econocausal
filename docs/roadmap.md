@@ -11,7 +11,7 @@ Project window: **10 Oct 2026 – 10 Nov 2026**
 
 - [x] Repository structure, README, requirements
 - [x] Problem statement and causal diagram
-- [ ] Download script and data dictionary for Online Retail II
+- [x] Download script and data dictionary for Online Retail II
 - [ ] Cleaning: cancellations, returns, invalid prices, outliers
 - [ ] Product x week panel stored in SQLite
 - [ ] EDA notebook and written findings
