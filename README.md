@@ -48,7 +48,12 @@ Raw data is not committed to the repo. To get it:
 ```bash
 python -m econocausal.data.download   # download and extract the Excel file
 python -m econocausal.data.load       # convert it to parquet for fast loading
+python -m econocausal.data.build      # clean, build the weekly panel, save to SQLite
 ```
+
+The build step creates `data/econocausal.db` with three tables: `weekly_sales`
+(product x week panel used for modelling), `products` (one row per product) and
+`cleaning_log` (rows removed by each cleaning step).
 
 Column descriptions and data quality notes: [docs/data_dictionary.md](docs/data_dictionary.md)
 

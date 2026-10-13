@@ -52,7 +52,7 @@ Column names are converted to snake_case in `econocausal.data.load.standardize`.
 
 ## Data quality issues found
 
-These will be handled in the cleaning step (Day 4).
+Handled in `econocausal.data.clean`. The "Plan" column describes the rule applied.
 
 | Issue | Size | Plan |
 |-------|------|------|
@@ -67,6 +67,50 @@ These will be handled in the cleaning step (Day 4).
 | Same stock code, several descriptions | up to 9 per code | Use the most frequent description per code |
 | Extreme quantities | min −80,995, max 80,995 (one bulk order that was cancelled); 99th percentile is 100 | Clip or remove extreme outliers after removing cancellations |
 | Extreme prices | max £38,970 (manual/adjustment lines); 99th percentile is £18 | Mostly removed with the non-product codes; check what remains |
+
+## Cleaning results
+
+Output of `python -m econocausal.data.build`:
+
+| Step | Rows removed | Rows left |
+|------|-------------:|----------:|
+| Raw data | | 1,067,371 |
+| Cancellations and adjustments (`C`, `A` invoices) | 19,500 | 1,047,871 |
+| Quantity ≤ 0 or price ≤ 0 | 6,202 | 1,041,669 |
+| Non-product stock codes | 4,792 | 1,036,877 |
+| Exact duplicate lines | 33,663 | 1,003,214 |
+| Price more than 10x above/below the product's median | 882 | 1,002,332 |
+| Bulk lines above the 99.99th quantity percentile | 101 | **1,002,231** |
+
+Missing descriptions are then filled with the most frequent description of each
+stock code, so every product has exactly one name.
+
+## Weekly panel (`weekly_sales` table)
+
+Built in `econocausal.data.panel`. One row per product per week (weeks start on Monday).
+
+| Column | Description |
+|--------|-------------|
+| `stock_code`, `description`, `category` | product, its name and a keyword-based category |
+| `week_start` | Monday of the week |
+| `price` | **median** unit price that week (treatment, before the log) |
+| `quantity` | total units sold that week (outcome, before the log) |
+| `revenue` | total revenue that week |
+| `n_invoices`, `n_customers` | number of orders and distinct customers |
+| `uk_share` | share of the week's order lines from UK customers |
+| `log_price`, `log_quantity` | model variables |
+| `year`, `month`, `week_of_year` | calendar |
+| `weeks_to_christmas` | weeks until the next 25 December |
+| `is_peak_season` | September to November, when wholesale customers stock up for Christmas |
+| `has_bank_holiday` | week contains a UK bank holiday |
+
+Filters and result:
+
+- The last week (starting 2011-12-05) is dropped because the data ends on a Friday.
+- Products need at least **30 weeks** of sales and at least **5 different weekly prices**.
+- Result: **126,672 rows, 1,877 products, weeks from 2009-11-30 to 2011-11-28**, no missing values.
+- Weeks with no sales are not in the panel, because the price is not observed in those weeks.
+- About 37% of panel rows fall into category `other`; the keyword rules can be refined later.
 
 ## Notes for the elasticity analysis
 
