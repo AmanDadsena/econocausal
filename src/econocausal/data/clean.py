@@ -63,8 +63,12 @@ def fill_descriptions(df: pd.DataFrame) -> pd.DataFrame:
     """
     canonical = (
         df.dropna(subset=["description"])
-        .groupby("stock_code")["description"]
-        .agg(lambda s: s.value_counts().index[0])
+        .groupby(["stock_code", "description"])
+        .size()
+        .reset_index(name="n")
+        .sort_values(["stock_code", "n"], ascending=[True, False])
+        .drop_duplicates("stock_code")
+        .set_index("stock_code")["description"]
     )
     df = df.copy()
     df["description"] = df["stock_code"].map(canonical).astype("string")

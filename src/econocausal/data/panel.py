@@ -65,21 +65,26 @@ def aggregate_weekly(df: pd.DataFrame) -> pd.DataFrame:
     lower unit prices; a quantity-weighted price would partly be caused by the
     quantity itself, which is the reverse of the effect we want to measure.
     """
-    df = df.assign(week_start=df["invoice_date"].dt.to_period("W-SUN").dt.start_time)
+    df = df.assign(
+        week_start=df["invoice_date"].dt.to_period("W-SUN").dt.start_time,
+        is_uk=(df["country"] == "United Kingdom").astype("float64"),
+    )
 
     weekly = (
-        df.groupby(["stock_code", "week_start"])
+        df.groupby(["stock_code", "week_start"], observed=True)
         .agg(
-            description=("description", "first"),
             price=("price", "median"),
             quantity=("quantity", "sum"),
             revenue=("revenue", "sum"),
             n_invoices=("invoice", "nunique"),
             n_customers=("customer_id", "nunique"),
-            uk_share=("country", lambda s: (s == "United Kingdom").mean()),
+            uk_share=("is_uk", "mean"),
         )
         .reset_index()
     )
+    # Each stock code has a single description after cleaning, so map it back.
+    descriptions = df.drop_duplicates("stock_code").set_index("stock_code")["description"]
+    weekly.insert(2, "description", weekly["stock_code"].map(descriptions))
 
     # The last week in the data is cut off (data ends on a Friday), so drop it.
     last_date = df["invoice_date"].max().normalize()
@@ -123,11 +128,8 @@ def add_features(weekly: pd.DataFrame) -> pd.DataFrame:
     df["weeks_to_christmas"] = weeks_to_christmas(week)
     df["is_peak_season"] = df["month"].isin([9, 10, 11]).astype("int64")
 
-    week_end = week + pd.Timedelta(days=6)
-    df["has_bank_holiday"] = [
-        int(((UK_BANK_HOLIDAYS >= s) & (UK_BANK_HOLIDAYS <= e)).any())
-        for s, e in zip(week, week_end)
-    ]
+    holiday_weeks = set(UK_BANK_HOLIDAYS.to_period("W-SUN").start_time)
+    df["has_bank_holiday"] = week.isin(holiday_weeks).astype("int64")
 
     categories = {code: assign_category(desc) for code, desc in
                   df.groupby("stock_code")["description"].first().items()}
