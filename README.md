@@ -57,6 +57,16 @@ The build step creates `data/econocausal.db` with three tables: `weekly_sales`
 
 Column descriptions and data quality notes: [docs/data_dictionary.md](docs/data_dictionary.md)
 
+## Early findings (EDA)
+
+- Prices change within products in about a third of weeks (typical swing ±28%), enough to estimate elasticities.
+- Demand peaks in Oct–Nov while prices dip, and prices rise in December: season affects both.
+- One-off buyers without a customer ID pay about 2x the usual price, so customer mix drives weekly prices.
+- The naive price slope moves from −0.67 (pooled) to about −1.5 (within product) depending on the
+  controls, which is why Double ML is needed.
+
+Details: [docs/eda_findings.md](docs/eda_findings.md) · notebook: [notebooks/01_eda.ipynb](notebooks/01_eda.ipynb)
+
 ## Tech stack
 
 Python, pandas, scikit-learn, LightGBM, EconML, FastAPI, SQLite (SQLAlchemy), Streamlit, pytest.
