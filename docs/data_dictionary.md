@@ -98,6 +98,7 @@ Built in `econocausal.data.panel`. One row per product per week (weeks start on 
 | `revenue` | total revenue that week |
 | `n_invoices`, `n_customers` | number of orders and distinct customers |
 | `uk_share` | share of the week's order lines from UK customers |
+| `guest_share` | share of the week's order lines with no customer ID. These one-off buyers pay a higher retail price (about 2x the product's median), so this column is a key confounder |
 | `log_price`, `log_quantity` | model variables |
 | `year`, `month`, `week_of_year` | calendar |
 | `weeks_to_christmas` | weeks until the next 25 December |

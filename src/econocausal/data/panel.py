@@ -68,6 +68,7 @@ def aggregate_weekly(df: pd.DataFrame) -> pd.DataFrame:
     df = df.assign(
         week_start=df["invoice_date"].dt.to_period("W-SUN").dt.start_time,
         is_uk=(df["country"] == "United Kingdom").astype("float64"),
+        is_guest=df["customer_id"].isna().astype("float64"),
     )
 
     weekly = (
@@ -79,6 +80,10 @@ def aggregate_weekly(df: pd.DataFrame) -> pd.DataFrame:
             n_invoices=("invoice", "nunique"),
             n_customers=("customer_id", "nunique"),
             uk_share=("is_uk", "mean"),
+            # Lines without a customer ID are one-off buyers who pay the higher retail
+            # price tier (about 2x the usual price), so this share drives the weekly
+            # median price and is an important confounder.
+            guest_share=("is_guest", "mean"),
         )
         .reset_index()
     )

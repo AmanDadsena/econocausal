@@ -28,7 +28,7 @@ def test_aggregate_weekly_uses_median_price_and_sums_quantity():
     lines = [
         make_line("A", "2010-03-01", 10, 1.0, invoice="1"),   # Monday
         make_line("A", "2010-03-03", 100, 0.5, invoice="2"),  # bulk order, lower price
-        make_line("A", "2010-03-04", 5, 1.0, invoice="3", country="France"),
+        make_line("A", "2010-03-04", 5, 1.0, invoice="3", customer=None, country="France"),
         make_line("A", "2010-03-15", 1, 1.0),                 # keeps the week above complete
     ]
     weekly = aggregate_weekly(pd.DataFrame(lines))
@@ -38,6 +38,7 @@ def test_aggregate_weekly_uses_median_price_and_sums_quantity():
     assert first["quantity"] == 115
     assert first["n_invoices"] == 3
     assert np.isclose(first["uk_share"], 2 / 3)
+    assert np.isclose(first["guest_share"], 1 / 3)
 
 
 def test_aggregate_weekly_drops_incomplete_last_week():
