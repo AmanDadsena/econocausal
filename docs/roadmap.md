@@ -15,7 +15,7 @@ Project window: **10 Oct 2026 – 10 Nov 2026**
 - [x] Cleaning: cancellations, returns, invalid prices, outliers
 - [x] Product x week panel stored in SQLite
 - [x] EDA notebook and written findings
-- [ ] Synthetic dataset with a known elasticity
+- [x] Synthetic dataset with a known elasticity
 - [ ] Naive OLS baselines
 
 **Milestone:** clean weekly data in the database, and a clear picture of how much

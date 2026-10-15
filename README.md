@@ -41,7 +41,9 @@ recommend prices.
 
 - [Online Retail II (UCI Machine Learning Repository)](https://archive.ics.uci.edu/dataset/502/online+retail+ii):
   around 1M transactions from a UK online retailer, 2009-2011.
-- A synthetic dataset generated in this repo with a known true elasticity.
+- A synthetic dataset generated in this repo with a known true elasticity (−1.8) and the same kinds of
+  confounding as the real data, used to check which methods recover the true value.
+  Design and validation: [docs/synthetic_data.md](docs/synthetic_data.md)
 
 Raw data is not committed to the repo. To get it:
 
