@@ -69,6 +69,20 @@ Column descriptions and data quality notes: [docs/data_dictionary.md](docs/data_
 
 Details: [docs/eda_findings.md](docs/eda_findings.md) · notebook: [notebooks/01_eda.ipynb](notebooks/01_eda.ipynb)
 
+## Baselines
+
+Naive log-log OLS (`python -m econocausal.baselines`). On the synthetic data the true elasticity is −1.8.
+
+| Method | Synthetic | Real |
+|--------|----------:|-----:|
+| Pooled, no controls | −1.15 | −0.67 |
+| Product fixed effects | −2.74 | −1.54 |
+| Product + week fixed effects | −2.91 | −1.60 |
+| Product + week FE + guest/UK share | −1.93 | −1.53 |
+
+None of them recovers the true value on synthetic data, and their confidence intervals exclude it.
+Full table: [reports/baseline_results.csv](reports/baseline_results.csv)
+
 ## Tech stack
 
 Python, pandas, scikit-learn, LightGBM, EconML, FastAPI, SQLite (SQLAlchemy), Streamlit, pytest.
@@ -108,8 +122,8 @@ pip install -e .
 
 | Week | Focus | Status |
 |------|-------|--------|
-| 1 | Setup, data pipeline, EDA, synthetic data | In progress |
-| 2 | Baselines, DML (manual + EconML), API, first dashboard | Not started |
+| 1 | Setup, data pipeline, EDA, synthetic data, naive baselines | Done ([notes](docs/progress/week1.md)) |
+| 2 | DML (manual + EconML), API, first dashboard | Next |
 | 3 | Heterogeneous effects, robustness checks, price optimizer | Not started |
 | 4 | Full dashboard, Docker, CI, deployment | Not started |
 

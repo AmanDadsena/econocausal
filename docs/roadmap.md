@@ -16,7 +16,7 @@ Project window: **10 Oct 2026 – 10 Nov 2026**
 - [x] Product x week panel stored in SQLite
 - [x] EDA notebook and written findings
 - [x] Synthetic dataset with a known elasticity
-- [ ] Naive OLS baselines
+- [x] Naive OLS baselines
 
 **Milestone:** clean weekly data in the database, and a clear picture of how much
 prices actually vary.
