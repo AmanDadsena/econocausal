@@ -4,6 +4,9 @@ Tables written by the data pipeline:
     weekly_sales   product x week panel used for modelling
     products       one row per product with summary stats
     cleaning_log   rows removed by each cleaning step
+
+Tables written by the models:
+    results        one row per (dataset, method) elasticity estimate
 """
 
 from pathlib import Path
@@ -67,6 +70,25 @@ def save_panel(panel: pd.DataFrame, cleaning_log: pd.DataFrame, engine: Engine) 
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_products_stock_code ON products (stock_code)"
         ))
+
+
+RESULT_KEYS = ["dataset", "method"]
+
+
+def save_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
+    """Add estimates to the `results` table.
+
+    A row with the same dataset and method as an existing one replaces it, so
+    re-running a model updates its result instead of adding a duplicate.
+    Returns the full table after the update.
+    """
+    new = results.assign(created_at=pd.Timestamp.now().floor("s"))
+    if inspect(engine).has_table("results"):
+        old = read_table("results", engine, parse_dates=["created_at"])
+        replaced = old.set_index(RESULT_KEYS).index.isin(new.set_index(RESULT_KEYS).index)
+        new = pd.concat([old[~replaced], new], ignore_index=True)
+    save_table(new, "results", engine)
+    return new
 
 
 def load_panel(engine: Engine | None = None) -> pd.DataFrame:

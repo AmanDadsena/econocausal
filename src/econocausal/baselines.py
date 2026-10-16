@@ -93,8 +93,35 @@ def run_baselines(df: pd.DataFrame, dataset: str, true_value: float | None = Non
     rows = []
     for method, spec in SPECS.items():
         result = fit_baseline(df, spec["fixed_effects"], spec["controls"])
-        rows.append({"dataset": dataset, "method": method, **result, "true_value": true_value})
+        rows.append({"dataset": dataset, "method": method, **result})
     results = pd.DataFrame(rows)
-    if true_value is not None:
-        results["error"] = results["estimate"] - true_value
+    results["true_value"] = np.nan if true_value is None else float(true_value)
+    results["error"] = results["estimate"] - results["true_value"]
     return results
+
+
+def main() -> None:
+    from econocausal.data.db import get_engine, load_panel, save_results
+    from econocausal.paths import PROJECT_ROOT
+    from econocausal.simulate import simulate_panel
+
+    synthetic = simulate_panel()
+    results = pd.concat(
+        [
+            run_baselines(synthetic, "synthetic", true_value=synthetic.attrs["true_elasticity"]),
+            run_baselines(load_panel(), "real"),
+        ],
+        ignore_index=True,
+    )
+
+    out = PROJECT_ROOT / "reports" / "baseline_results.csv"
+    results.round(4).to_csv(out, index=False)
+    save_results(results, get_engine())
+
+    with pd.option_context("display.width", 120, "display.float_format", "{:.3f}".format):
+        print(results.drop(columns=["true_value"]).to_string(index=False))
+    print(f"\nSaved to {out} and the `results` table")
+
+
+if __name__ == "__main__":
+    main()

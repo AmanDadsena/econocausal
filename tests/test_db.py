@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from sqlalchemy import inspect
 
-from econocausal.data.db import get_engine, load_panel, read_table, save_panel
+from econocausal.data.db import get_engine, load_panel, read_table, save_panel, save_results
 
 
 @pytest.fixture
@@ -40,6 +40,20 @@ def test_products_summary(engine):
     assert products.loc["A", "n_weeks"] == 2
     assert products.loc["A", "total_quantity"] == 16
     assert products.loc["A", "max_price"] == 2.5
+
+
+def test_save_results_replaces_same_dataset_and_method(engine):
+    first = pd.DataFrame(
+        {"dataset": ["real", "real"], "method": ["pooled", "product_fe"], "estimate": [-0.7, -1.5]}
+    )
+    save_results(first, engine)
+    rerun = pd.DataFrame({"dataset": ["real"], "method": ["pooled"], "estimate": [-0.65]})
+    table = save_results(rerun, engine).set_index("method")
+
+    assert len(table) == 2
+    assert table.loc["pooled", "estimate"] == -0.65
+    assert table.loc["product_fe", "estimate"] == -1.5
+    assert len(read_table("results", engine)) == 2
 
 
 def test_read_missing_table_gives_clear_error(engine):
