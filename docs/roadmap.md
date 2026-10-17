@@ -23,8 +23,8 @@ prices actually vary.
 
 ## Week 2 (17 – 23 Oct): causal core
 
-- [ ] Cross-fitting helper for nuisance models
-- [ ] Manual DML estimator with standard errors and confidence intervals
+- [x] Cross-fitting helper for nuisance models
+- [x] Manual DML estimator with standard errors and confidence intervals
 - [ ] EconML `LinearDML` and comparison with the manual version
 - [ ] Category-level elasticities on real data
 - [ ] FastAPI service: health, products, elasticity endpoints

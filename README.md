@@ -83,6 +83,20 @@ Naive log-log OLS (`python -m econocausal.baselines`). On the synthetic data the
 None of them recovers the true value on synthetic data, and their confidence intervals exclude it.
 Full table: [reports/baseline_results.csv](reports/baseline_results.csv)
 
+## Double ML (own implementation)
+
+[`src/econocausal/dml.py`](src/econocausal/dml.py): product fixed effects removed by demeaning,
+LightGBM nuisance models cross-fitted over folds split by product, residual-on-residual final stage,
+standard errors clustered by product.
+
+| Synthetic setting (true value −1.8) | DML estimate | 95% CI |
+|-------------------------------------|-------------:|--------|
+| Default | **−1.806** | −1.851 to −1.760 |
+| Elasticity varies by category (average −1.8) | **−1.806** | −1.871 to −1.741 |
+| Hidden confounder (assumption broken) | +0.22 | fails, as expected |
+
+The best naive baseline on the same data gives −1.93 (CI −1.96 to −1.89), which excludes the true value.
+
 ## Tech stack
 
 Python, pandas, scikit-learn, LightGBM, EconML, FastAPI, SQLite (SQLAlchemy), Streamlit, pytest.
