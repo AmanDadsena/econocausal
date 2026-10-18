@@ -25,7 +25,7 @@ def set_style() -> None:
             "figure.dpi": 110,
             "font.size": 10,
             "axes.titlesize": 12,
-            "axes.titleweight": "semibold",
+            "axes.titleweight": "bold",
             "axes.titlelocation": "left",
             "axes.labelcolor": TEXT_MUTED,
             "axes.edgecolor": GRID,

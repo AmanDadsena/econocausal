@@ -1,0 +1,7 @@
+dataset,method,estimate,std_error,ci_low,ci_high,n_obs,true_value,error,n_groups,outcome_r2,treatment_r2,ci_covers_truth
+synthetic,pooled,-1.1472,0.0553,-1.2556,-1.0389,31200,-1.8,0.6528,,,,False
+synthetic,product_fe,-2.7361,0.012,-2.7595,-2.7126,31200,-1.8,-0.9361,,,,False
+synthetic,product_week_fe,-2.9082,0.0117,-2.931,-2.8853,31200,-1.8,-1.1082,,,,False
+synthetic,product_week_fe_controls,-1.9269,0.0194,-1.9649,-1.889,31200,-1.8,-0.1269,,,,False
+synthetic,dml_manual,-1.8058,0.0233,-1.8515,-1.7601,31200,-1.8,-0.0058,300.0,0.7271,0.8494,True
+synthetic,dml_econml,-1.8161,0.0231,-1.8614,-1.7707,31200,-1.8,-0.0161,300.0,0.7271,0.8495,True
