@@ -2,7 +2,14 @@ import pandas as pd
 import pytest
 from sqlalchemy import inspect
 
-from econocausal.data.db import get_engine, load_panel, read_table, save_panel, save_results
+from econocausal.data.db import (
+    get_engine,
+    load_panel,
+    read_table,
+    save_panel,
+    save_results,
+    save_segment_results,
+)
 
 
 @pytest.fixture
@@ -54,6 +61,19 @@ def test_save_results_replaces_same_dataset_and_method(engine):
     assert table.loc["pooled", "estimate"] == -0.65
     assert table.loc["product_fe", "estimate"] == -1.5
     assert len(read_table("results", engine)) == 2
+
+
+def test_save_segment_results_replaces_matching_rows(engine):
+    first = pd.DataFrame({
+        "dataset": "real", "method": "dml_manual", "segment": "category",
+        "value": ["bags", "christmas"], "estimate": [-1.0, -2.0],
+    })
+    save_segment_results(first, engine)
+    rerun = first.iloc[[0]].assign(estimate=-1.1)
+    table = save_segment_results(rerun, engine).set_index("value")
+    assert len(table) == 2
+    assert table.loc["bags", "estimate"] == -1.1
+    assert table.loc["christmas", "estimate"] == -2.0
 
 
 def test_read_missing_table_gives_clear_error(engine):

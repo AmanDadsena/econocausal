@@ -1,0 +1,12 @@
+segment,value,estimate,std_error,ci_low,ci_high,n_obs,n_groups,dataset,method
+category,garden,-1.5699,0.107,-1.7797,-1.3602,2493,38,real,dml_manual
+category,candles_lighting,-1.5263,0.0693,-1.6622,-1.3904,10085,157,real,dml_manual
+category,bags,-1.3682,0.0939,-1.5522,-1.1843,7330,94,real,dml_manual
+category,other,-1.288,0.0341,-1.3547,-1.2212,47047,699,real,dml_manual
+category,stationery_cards,-1.2809,0.0815,-1.4405,-1.1212,12069,168,real,dml_manual
+category,home_decor,-1.2595,0.0568,-1.3709,-1.1481,16578,249,real,dml_manual
+category,kitchen_dining,-1.2165,0.0658,-1.3454,-1.0876,19211,258,real,dml_manual
+category,toys_kids,-1.1787,0.1515,-1.4758,-0.8817,4289,59,real,dml_manual
+category,christmas,-1.109,0.1001,-1.3051,-0.9128,2812,60,real,dml_manual
+category,jewellery,-0.9596,0.123,-1.2006,-0.7186,3418,71,real,dml_manual
+category,easter,-0.9009,0.1792,-1.2521,-0.5497,1340,24,real,dml_manual

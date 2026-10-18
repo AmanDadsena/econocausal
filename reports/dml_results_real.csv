@@ -1,0 +1,3 @@
+dataset,method,estimate,std_error,ci_low,ci_high,n_obs,n_groups,outcome_r2,treatment_r2
+real,dml_manual,-1.2751,0.0228,-1.3198,-1.2304,126672,1877,0.3244,0.4743
+real,dml_econml,-1.3706,0.0123,-1.3948,-1.3464,126672,1877,0.3241,0.4739

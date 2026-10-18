@@ -5,7 +5,7 @@ import statsmodels.api as sm
 from lightgbm import LGBMRegressor
 
 from econocausal.baselines import run_baselines
-from econocausal.dml import build_features, estimate_elasticity, final_stage
+from econocausal.dml import build_features, estimate_by_segment, estimate_elasticity, final_stage
 from econocausal.simulate import TRUE_ELASTICITY, simulate_panel
 
 
@@ -93,6 +93,25 @@ def test_dml_cannot_fix_hidden_confounding():
     result = fit(df)
     assert not (result.ci_low < TRUE_ELASTICITY < result.ci_high)
     assert abs(result.estimate - TRUE_ELASTICITY) > 0.5
+
+
+def test_estimate_by_segment_recovers_category_elasticities():
+    df = simulate_panel(n_products=300, n_weeks=104, seed=2, heterogeneous=True)
+    by_category = estimate_by_segment(
+        df, "category", model_y=fast_model(), model_t=fast_model()
+    ).set_index("value")
+    truth = df.groupby("category")["true_elasticity"].first()
+
+    assert set(by_category.index) == set(truth.index)
+    truth = truth.reindex(by_category.index)
+    assert (by_category["estimate"] - truth).abs().max() < 0.2
+    # Most intervals should contain the truth (with 95% CIs, 6 categories).
+    covered = (by_category["ci_low"] < truth) & (truth < by_category["ci_high"])
+    assert covered.sum() >= 5
+    # The ordering of the most and least elastic categories is recovered.
+    assert by_category["estimate"].idxmin() == "christmas"
+    assert by_category["estimate"].idxmax() == "stationery_cards"
+    assert by_category["n_obs"].sum() == len(df)
 
 
 def test_works_on_unbalanced_panel(synthetic):

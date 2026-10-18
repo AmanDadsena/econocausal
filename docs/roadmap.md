@@ -25,8 +25,8 @@ prices actually vary.
 
 - [x] Cross-fitting helper for nuisance models
 - [x] Manual DML estimator with standard errors and confidence intervals
-- [ ] EconML `LinearDML` and comparison with the manual version
-- [ ] Category-level elasticities on real data
+- [x] EconML `LinearDML` and comparison with the manual version
+- [x] Category-level elasticities on real data
 - [ ] FastAPI service: health, products, elasticity endpoints
 - [ ] First Streamlit page
 

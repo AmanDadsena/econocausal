@@ -6,7 +6,8 @@ Tables written by the data pipeline:
     cleaning_log   rows removed by each cleaning step
 
 Tables written by the models:
-    results        one row per (dataset, method) elasticity estimate
+    results              one row per (dataset, method) elasticity estimate
+    segment_elasticity   one row per (dataset, method, segment, value), e.g. per category
 """
 
 from pathlib import Path
@@ -73,22 +74,31 @@ def save_panel(panel: pd.DataFrame, cleaning_log: pd.DataFrame, engine: Engine) 
 
 
 RESULT_KEYS = ["dataset", "method"]
+SEGMENT_KEYS = ["dataset", "method", "segment", "value"]
+
+
+def upsert_table(df: pd.DataFrame, name: str, keys: list[str], engine: Engine) -> pd.DataFrame:
+    """Add rows to a table; rows with the same key values replace the existing ones,
+    so re-running a model updates its results instead of adding duplicates.
+    Returns the full table after the update."""
+    new = df.assign(created_at=pd.Timestamp.now().floor("s"))
+    if inspect(engine).has_table(name):
+        old = read_table(name, engine, parse_dates=["created_at"])
+        old_keys = pd.MultiIndex.from_frame(old[keys].astype(str))
+        new_keys = pd.MultiIndex.from_frame(new[keys].astype(str))
+        new = pd.concat([old[~old_keys.isin(new_keys)], new], ignore_index=True)
+    save_table(new, name, engine)
+    return new
 
 
 def save_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
-    """Add estimates to the `results` table.
+    """Add overall estimates to the `results` table (key: dataset, method)."""
+    return upsert_table(results, "results", RESULT_KEYS, engine)
 
-    A row with the same dataset and method as an existing one replaces it, so
-    re-running a model updates its result instead of adding a duplicate.
-    Returns the full table after the update.
-    """
-    new = results.assign(created_at=pd.Timestamp.now().floor("s"))
-    if inspect(engine).has_table("results"):
-        old = read_table("results", engine, parse_dates=["created_at"])
-        replaced = old.set_index(RESULT_KEYS).index.isin(new.set_index(RESULT_KEYS).index)
-        new = pd.concat([old[~replaced], new], ignore_index=True)
-    save_table(new, "results", engine)
-    return new
+
+def save_segment_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
+    """Add per-segment estimates to `segment_elasticity` (key: dataset, method, segment, value)."""
+    return upsert_table(results, "segment_elasticity", SEGMENT_KEYS, engine)
 
 
 def load_panel(engine: Engine | None = None) -> pd.DataFrame:

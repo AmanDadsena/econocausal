@@ -122,7 +122,7 @@ def final_stage(y_res: np.ndarray, t_res: np.ndarray, groups: np.ndarray, level:
     return theta, se, theta - z * se, theta + z * se
 
 
-def estimate_elasticity(
+def residualize(
     df: pd.DataFrame,
     features: list[str] | None = None,
     model_y=None,
@@ -130,8 +130,11 @@ def estimate_elasticity(
     n_folds: int = 5,
     product_fixed_effects: bool = True,
     seed: int = 0,
-) -> DMLResult:
-    """Estimate the average price elasticity with DML.
+) -> tuple[pd.DataFrame, float, float]:
+    """Steps 1-3: cross-fitted residuals of log quantity (`y`) and log price (`t`).
+
+    Returns the residuals (one row per input row, with `stock_code`) and the out-of-fold
+    R² of the outcome and treatment models.
 
     Parameters
     ----------
@@ -161,15 +164,52 @@ def estimate_elasticity(
         # Models trained on other products cannot know this product's average error, so
         # remove it, exactly as the fixed effects were removed from the inputs.
         residuals[["y", "t"]] = demean(residuals, ["y", "t"], [GROUP])
+    return residuals, outcome_r2, treatment_r2
 
+
+def estimate_elasticity(df: pd.DataFrame, **kwargs) -> DMLResult:
+    """Estimate the average price elasticity with DML.
+
+    Keyword arguments are passed to `residualize` (features, models, folds, seed).
+    """
+    residuals, outcome_r2, treatment_r2 = residualize(df, **kwargs)
+    groups = residuals[GROUP].to_numpy()
     theta, se, low, high = final_stage(residuals["y"].to_numpy(), residuals["t"].to_numpy(), groups)
     return DMLResult(
         estimate=theta,
         std_error=se,
         ci_low=low,
         ci_high=high,
-        n_obs=len(df),
+        n_obs=len(residuals),
         n_groups=len(np.unique(groups)),
         outcome_r2=outcome_r2,
         treatment_r2=treatment_r2,
     )
+
+
+def estimate_by_segment(df: pd.DataFrame, segment: str = "category", **kwargs) -> pd.DataFrame:
+    """Elasticity for each value of `segment` (e.g. each product category).
+
+    The nuisance models are fitted once on all the data; the final stage is then run
+    separately on each segment's residuals. This is the same as a DML model where the
+    elasticity is allowed to differ by segment (a separate θ per category), and it uses
+    all products to learn the confounder effects, so small categories still get good
+    nuisance models.
+    """
+    df = df.reset_index(drop=True)
+    residuals, _, _ = residualize(df, **kwargs)
+    rows = []
+    for value, part in residuals.groupby(df[segment], observed=True):
+        groups = part[GROUP].to_numpy()
+        theta, se, low, high = final_stage(part["y"].to_numpy(), part["t"].to_numpy(), groups)
+        rows.append({
+            "segment": segment,
+            "value": value,
+            "estimate": theta,
+            "std_error": se,
+            "ci_low": low,
+            "ci_high": high,
+            "n_obs": len(part),
+            "n_groups": len(np.unique(groups)),
+        })
+    return pd.DataFrame(rows).sort_values("estimate").reset_index(drop=True)

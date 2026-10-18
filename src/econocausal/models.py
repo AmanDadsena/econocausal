@@ -8,6 +8,14 @@ Two known differences:
 * EconML's default inference uses heteroskedasticity-robust (HC1) standard errors, not
   standard errors clustered by product, so its intervals are usually somewhat narrower.
 * The manual version demeans the residuals by product a second time; EconML does not.
+
+The second point matters on the real (unbalanced) panel. Nuisance models are trained on
+other products, so they cannot know a product's typical error; those product-level errors
+are large and correlated between the outcome and treatment models (correlation -0.65 on
+the real data). Leaving them in lets between-product differences back into what should be
+a within-product estimate. Checked directly: the manual estimator without the second
+demeaning gives -1.368, matching EconML's -1.371; with it, -1.275. On the balanced
+synthetic data the two agree (-1.806 vs -1.816).
 """
 
 import numpy as np

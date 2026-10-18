@@ -96,6 +96,48 @@ standard errors clustered by product.
 | Hidden confounder (assumption broken) | +0.22 | fails, as expected |
 
 The best naive baseline on the same data gives −1.93 (CI −1.96 to −1.89), which excludes the true value.
+EconML's `LinearDML` with the same inputs gives −1.816 (−1.861 to −1.771).
+Comparison notebook: [notebooks/02_dml_synthetic.ipynb](notebooks/02_dml_synthetic.ipynb)
+
+![Method comparison on synthetic data](reports/figures/08_method_comparison_synthetic.png)
+
+## First results on real data
+
+`python -m econocausal.run_dml`
+
+| Method | Elasticity | 95% CI |
+|--------|-----------:|--------|
+| Best naive baseline (product + week FE + controls) | −1.53 | −1.58 to −1.48 |
+| **DML (own implementation)** | **−1.28** | −1.32 to −1.23 |
+| DML (EconML LinearDML) | −1.37 | −1.40 to −1.35 |
+
+A 1% price increase lowers weekly units by about 1.3% on average. As on the synthetic data, the
+linear baseline overstates price sensitivity, because the guest-buyer price step is not linear.
+
+The two DML versions differ because the own implementation removes each product's average residual a
+second time after the ML step and EconML does not. Without that step the own implementation gives
+−1.368, matching EconML; the step is needed for a true within-product estimate on this unbalanced panel
+(see the note in [`models.py`](src/econocausal/models.py)).
+
+**By category** (own DML; one set of nuisance models, separate final stage per category):
+
+| Category | Elasticity | 95% CI | Products |
+|----------|-----------:|--------|---------:|
+| garden | −1.57 | −1.78 to −1.36 | 38 |
+| candles_lighting | −1.53 | −1.66 to −1.39 | 157 |
+| bags | −1.37 | −1.55 to −1.18 | 94 |
+| other | −1.29 | −1.36 to −1.22 | 699 |
+| stationery_cards | −1.28 | −1.44 to −1.12 | 168 |
+| home_decor | −1.26 | −1.37 to −1.15 | 249 |
+| kitchen_dining | −1.22 | −1.35 to −1.09 | 258 |
+| toys_kids | −1.18 | −1.48 to −0.88 | 59 |
+| christmas | −1.11 | −1.31 to −0.91 | 60 |
+| jewellery | −0.96 | −1.20 to −0.72 | 71 |
+| easter | −0.90 | −1.25 to −0.55 | 24 |
+
+Every category is price sensitive. Jewellery and Easter items are the least elastic, though their
+intervals are wide because they have few products. Full results:
+[reports/category_elasticities_real.csv](reports/category_elasticities_real.csv)
 
 ## Tech stack
 
