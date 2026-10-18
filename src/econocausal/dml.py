@@ -56,7 +56,11 @@ PRODUCT_MEAN_FEATURES = ["guest_share", "uk_share"]
 
 def default_model(seed: int = 0) -> LGBMRegressor:
     """LightGBM settings for the nuisance models: shallow-ish trees, many rows per leaf
-    and moderate shrinkage, which suits smooth seasonal and customer-mix effects."""
+    and moderate shrinkage, which suits smooth seasonal and customer-mix effects.
+
+    n_jobs=4: on these data sizes using every core is slower because of thread overhead
+    (measured on the real panel: 45 s with 4 threads vs 54 s with 1; all 16 cores was
+    about twice as slow as 1 on the synthetic panel). Results do not depend on it."""
     return LGBMRegressor(
         n_estimators=400,
         learning_rate=0.05,
@@ -66,6 +70,7 @@ def default_model(seed: int = 0) -> LGBMRegressor:
         subsample_freq=1,
         colsample_bytree=0.9,
         random_state=seed,
+        n_jobs=4,
         verbose=-1,
     )
 
