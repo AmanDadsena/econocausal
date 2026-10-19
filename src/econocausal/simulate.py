@@ -158,5 +158,6 @@ def simulate_panel(
             "true_elasticity": true_elasticity,
         }
     )
-    df.attrs["true_elasticity"] = float(product_elasticity.mean())
+    # Rounded so floating-point noise from averaging (e.g. -1.8000000000000005) is not stored.
+    df.attrs["true_elasticity"] = round(float(product_elasticity.mean()), 10)
     return df

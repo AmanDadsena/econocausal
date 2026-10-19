@@ -63,6 +63,46 @@ def test_product_sales_history(client):
     assert weeks[0]["quantity"] == 100
 
 
+def test_elasticity_real_lists_methods_in_order(client):
+    r = client.get("/elasticity")
+    assert r.status_code == 200
+    rows = r.json()
+    assert [row["method"] for row in rows] == ["product_fe", "dml_manual"]
+    assert all(row["dataset"] == "real" for row in rows)
+    assert rows[1]["estimate"] == -1.28
+    assert rows[1]["true_value"] is None
+
+
+def test_elasticity_synthetic_includes_true_value(client):
+    rows = client.get("/elasticity", params={"dataset": "synthetic"}).json()
+    assert rows[0]["true_value"] == -1.8
+
+
+def test_elasticity_rejects_unknown_dataset(client):
+    assert client.get("/elasticity", params={"dataset": "other"}).status_code == 422
+
+
+def test_category_elasticities_most_elastic_first(client):
+    rows = client.get("/elasticity/categories").json()
+    assert [r["value"] for r in rows] == ["candles_lighting", "bags", "christmas"]
+    assert client.get("/elasticity/categories", params={"method": "nope"}).status_code == 404
+
+
+def test_product_elasticity_uses_its_category(client):
+    r = client.get("/products/22386/elasticity")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["category"] == "bags"
+    assert body["elasticity"] == -1.37
+    assert body["level"] == "category"
+    assert body["overall_elasticity"] == -1.28
+    assert body["interpretation"] == "A 1% price increase lowers weekly units sold by about 1.37%."
+
+
+def test_product_elasticity_unknown_product(client):
+    assert client.get("/products/NOPE/elasticity").status_code == 404
+
+
 def test_missing_tables_return_503(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 

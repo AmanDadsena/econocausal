@@ -100,6 +100,42 @@ class WeeklySales(BaseModel):
     guest_share: float
 
 
+class Estimate(BaseModel):
+    dataset: str
+    method: str
+    estimate: float
+    std_error: float
+    ci_low: float
+    ci_high: float
+    n_obs: int
+    true_value: float | None = None
+    outcome_r2: float | None = None
+    treatment_r2: float | None = None
+
+
+class SegmentEstimate(BaseModel):
+    segment: str
+    value: str
+    estimate: float
+    std_error: float
+    ci_low: float
+    ci_high: float
+    n_obs: int
+    n_groups: int
+
+
+class ProductElasticity(BaseModel):
+    stock_code: str
+    description: str | None
+    category: str
+    elasticity: float
+    ci_low: float
+    ci_high: float
+    level: str
+    overall_elasticity: float
+    interpretation: str
+
+
 # --- endpoints ---------------------------------------------------------------------
 
 @app.get("/health", response_model=Health, tags=["status"])
@@ -171,3 +207,88 @@ def product_sales(stock_code: str, db: EngineDep) -> list[dict]:
         raise HTTPException(status_code=404, detail=f"Product '{stock_code}' not found")
     df["week_start"] = pd.to_datetime(df["week_start"]).dt.strftime("%Y-%m-%d")
     return records(df)
+
+
+# Methods in the order they are usually compared (baselines first, then DML).
+METHOD_ORDER = [
+    "pooled", "product_fe", "product_week_fe", "product_week_fe_controls", "dml_manual", "dml_econml",
+]
+DEFAULT_METHOD = "dml_manual"
+
+
+@app.get("/elasticity", response_model=list[Estimate], tags=["elasticity"])
+def elasticity(
+    db: EngineDep,
+    dataset: Annotated[str, Query(pattern="^(real|synthetic)$")] = "real",
+) -> list[dict]:
+    """Average price elasticity from every method (naive OLS baselines and DML).
+
+    On `synthetic` data the true value is known and returned as `true_value`."""
+    require_tables(db, "results")
+    df = query(db, "SELECT * FROM results WHERE dataset = :dataset", dataset=dataset)
+    order = {m: i for i, m in enumerate(METHOD_ORDER)}
+    df = df.sort_values("method", key=lambda s: s.map(order).fillna(len(order)))
+    return records(df)
+
+
+@app.get("/elasticity/categories", response_model=list[SegmentEstimate], tags=["elasticity"])
+def elasticity_by_category(
+    db: EngineDep,
+    method: str = DEFAULT_METHOD,
+) -> list[dict]:
+    """Price elasticity for each product category on the real data, most elastic first."""
+    require_tables(db, "segment_elasticity")
+    df = query(
+        db,
+        """
+        SELECT segment, value, estimate, std_error, ci_low, ci_high, n_obs, n_groups
+        FROM segment_elasticity
+        WHERE dataset = 'real' AND segment = 'category' AND method = :method
+        ORDER BY estimate
+        """,
+        method=method,
+    )
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No category estimates for method '{method}'")
+    return records(df)
+
+
+@app.get("/products/{stock_code}/elasticity", response_model=ProductElasticity, tags=["elasticity"])
+def product_elasticity(stock_code: str, db: EngineDep) -> dict:
+    """Price elasticity for one product.
+
+    Currently this is the DML estimate for the product's **category** (products in the
+    same category share one elasticity). Product-level estimates will come from a causal
+    forest model."""
+    require_tables(db, "products", "segment_elasticity", "results")
+    info = product(stock_code, db)
+    seg = query(
+        db,
+        """
+        SELECT estimate, ci_low, ci_high FROM segment_elasticity
+        WHERE dataset = 'real' AND segment = 'category' AND method = :method AND value = :category
+        """,
+        method=DEFAULT_METHOD, category=info["category"],
+    )
+    overall = query(
+        db, "SELECT estimate FROM results WHERE dataset = 'real' AND method = :method",
+        method=DEFAULT_METHOD,
+    )
+    if seg.empty or overall.empty:
+        raise HTTPException(status_code=503, detail="Elasticity results missing. Run `python -m econocausal.run_dml`.")
+
+    e = float(seg["estimate"].iloc[0])
+    return {
+        "stock_code": info["stock_code"],
+        "description": info["description"],
+        "category": info["category"],
+        "elasticity": e,
+        "ci_low": float(seg["ci_low"].iloc[0]),
+        "ci_high": float(seg["ci_high"].iloc[0]),
+        "level": "category",
+        "overall_elasticity": float(overall["estimate"].iloc[0]),
+        "interpretation": (
+            f"A 1% price increase {'lowers' if e < 0 else 'raises'} weekly units sold "
+            f"by about {abs(e):.2f}%."
+        ),
+    }
