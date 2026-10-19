@@ -174,12 +174,54 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+## How to run
+
+**1. Build the data and the results** (once; the download is about 46 MB):
+
+```bash
+python -m econocausal.data.download   # download Online Retail II
+python -m econocausal.data.load       # Excel -> parquet
+python -m econocausal.data.build      # clean, weekly panel, SQLite
+python -m econocausal.baselines       # naive OLS baselines
+python -m econocausal.run_dml         # DML estimates (about 3 minutes)
+```
+
+**2. Start the API** (terminal 1):
+
+```bash
+uvicorn api.main:app --port 8000
+```
+
+Interactive API docs: http://localhost:8000/docs
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /health` | status and available tables |
+| `GET /categories` | categories with product counts and revenue |
+| `GET /products?category=&search=&limit=&offset=` | products, best sellers first |
+| `GET /products/{stock_code}` | one product's summary |
+| `GET /products/{stock_code}/sales` | weekly price, units, revenue, guest share |
+| `GET /products/{stock_code}/elasticity` | the product's (category-level) elasticity |
+| `GET /elasticity?dataset=real\|synthetic` | average elasticity from every method |
+| `GET /elasticity/categories` | elasticity per category |
+
+**3. Start the dashboard** (terminal 2):
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Opens at http://localhost:8501. It reads everything from the API (set `ECONOCAUSAL_API` if the API
+runs elsewhere).
+
+**Tests:** `pytest`
+
 ## Progress
 
 | Week | Focus | Status |
 |------|-------|--------|
 | 1 | Setup, data pipeline, EDA, synthetic data, naive baselines | Done ([notes](docs/progress/week1.md)) |
-| 2 | DML (manual + EconML), API, first dashboard | Next |
+| 2 | DML (manual + EconML), API, first dashboard | Done |
 | 3 | Heterogeneous effects, robustness checks, price optimizer | Not started |
 | 4 | Full dashboard, Docker, CI, deployment | Not started |
 

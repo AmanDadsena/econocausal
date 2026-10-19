@@ -20,6 +20,7 @@ pydantic>=2.6
 
 # dashboard / plots
 streamlit>=1.33
+requests>=2.31
 plotly>=5.20
 matplotlib>=3.8
 seaborn>=0.13

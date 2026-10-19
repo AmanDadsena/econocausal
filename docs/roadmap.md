@@ -27,8 +27,8 @@ prices actually vary.
 - [x] Manual DML estimator with standard errors and confidence intervals
 - [x] EconML `LinearDML` and comparison with the manual version
 - [x] Category-level elasticities on real data
-- [ ] FastAPI service: health, products, elasticity endpoints
-- [ ] First Streamlit page
+- [x] FastAPI service: health, products, elasticity endpoints
+- [x] First Streamlit page
 
 **Milestone (Mid Review):** on synthetic data, DML recovers the true elasticity while
 OLS does not; results available through the API and dashboard.
