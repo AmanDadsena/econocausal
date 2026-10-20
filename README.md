@@ -30,6 +30,7 @@ recommend prices.
 
 - Problem statement, causal diagram and assumptions: [docs/problem_statement.md](docs/problem_statement.md)
 - Week-wise plan and milestones: [docs/roadmap.md](docs/roadmap.md)
+- Mid Review checklist and viva notes: [docs/mid_review.md](docs/mid_review.md), [docs/viva_notes.md](docs/viva_notes.md)
 - Papers, libraries and data sources: [docs/references.md](docs/references.md)
 
 ## Approach
