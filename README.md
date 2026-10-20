@@ -2,6 +2,16 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
+## Status (20 Oct 2026)
+
+Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
+EconML comparison, REST API and first dashboard. 72 automated tests.
+
+- **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
+  OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
+- **Result:** on 126,672 real product-weeks, a 1% price increase lowers weekly units sold by about
+  **1.28%** (DML, 95% CI 1.23%–1.32%). The best naive regression overstates this at 1.53%.
+
 ## Problem
 
 A retailer wants to know how demand for a product changes when its price changes,
@@ -22,20 +32,46 @@ recommend prices.
 - Week-wise plan and milestones: [docs/roadmap.md](docs/roadmap.md)
 - Papers, libraries and data sources: [docs/references.md](docs/references.md)
 
-## Approach (planned)
+## Approach
 
-1. Clean transaction data and aggregate it to product x week level.
-2. Explore price variation, seasonality and demand patterns (EDA).
-3. Build a synthetic dataset where the true elasticity is known, to check whether
-   each method recovers it.
-4. Baselines: naive OLS on log(price) vs log(quantity).
-5. DML:
-   - my own implementation with cross-fitting
-   - EconML `LinearDML` for comparison
-   - `CausalForestDML` for elasticity by segment (category, season, country)
-6. Robustness checks (placebo treatment, random common cause, data subsets).
-7. Price optimizer that maximises expected profit under business constraints.
-8. FastAPI backend + SQLite database + Streamlit dashboard, deployed online.
+| # | Step | Status |
+|---|------|--------|
+| 1 | Clean transaction data and aggregate it to product x week level | Done |
+| 2 | Explore price variation, seasonality and demand patterns (EDA) | Done |
+| 3 | Synthetic dataset with a known elasticity, to check which methods recover it | Done |
+| 4 | Baselines: naive OLS on log(price) vs log(quantity) | Done |
+| 5a | DML, own implementation with cross-fitting | Done |
+| 5b | EconML `LinearDML` for comparison | Done |
+| 5c | Elasticity by category | Done |
+| 5d | `CausalForestDML` for product- and segment-level elasticities | Week 3 |
+| 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Week 3 |
+| 7 | Price optimizer that maximises expected profit under business constraints | Week 3 |
+| 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done (first version) |
+| 9 | Docker, CI and online deployment | Week 4 |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[UCI Online Retail II<br/>Excel, 1.07M rows] -->|download, load| B[parquet]
+    B -->|clean, aggregate| C[(SQLite<br/>weekly_sales, products)]
+    S[Synthetic data<br/>true elasticity -1.8] --> M
+    C --> M[Models<br/>OLS baselines, DML, EconML]
+    M -->|results, segment_elasticity| C
+    C --> API[FastAPI<br/>read-only REST API]
+    API --> UI[Streamlit dashboard]
+```
+
+| Folder | Contents |
+|--------|----------|
+| `src/econocausal/data/` | download, load, clean, weekly panel, database |
+| `src/econocausal/` | `simulate.py` (synthetic data), `baselines.py`, `crossfit.py`, `dml.py`, `models.py` (EconML), `run_dml.py` |
+| `api/` | FastAPI app |
+| `app/` | Streamlit dashboard |
+| `notebooks/` | EDA and the synthetic-data method comparison |
+| `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
+| `reports/` | figures and result tables |
+| `tests/` | 72 tests (pytest) |
 
 ## Data
 
@@ -142,22 +178,6 @@ intervals are wide because they have few products. Full results:
 ## Tech stack
 
 Python, pandas, scikit-learn, LightGBM, EconML, FastAPI, SQLite (SQLAlchemy), Streamlit, pytest.
-
-## Project structure
-
-```
-econocausal/
-├── api/                  FastAPI service
-├── app/                  Streamlit dashboard
-├── data/
-│   ├── raw/              original downloaded data (not tracked)
-│   └── processed/        cleaned / aggregated data (not tracked)
-├── docs/                 problem statement, notes, report
-├── notebooks/            EDA and experiments
-├── reports/figures/      saved plots
-├── src/econocausal/      main package (data pipeline, models, optimizer)
-└── tests/
-```
 
 ## Setup
 
