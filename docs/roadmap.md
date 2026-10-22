@@ -35,7 +35,7 @@ OLS does not; results available through the API and dashboard.
 
 ## Week 3 (24 – 30 Oct): advanced features and product
 
-- [ ] `CausalForestDML` for segment-level elasticities
+- [x] Causal forest for product- and segment-level elasticities
 - [ ] Robustness checks: placebo, random common cause, data subsets
 - [ ] Price optimizer with price bounds and margin constraints
 - [ ] Optimizer and simulator endpoints with tests

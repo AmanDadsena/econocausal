@@ -44,7 +44,7 @@ recommend prices.
 | 5a | DML, own implementation with cross-fitting | Done |
 | 5b | EconML `LinearDML` for comparison | Done |
 | 5c | Elasticity by category | Done |
-| 5d | `CausalForestDML` for product- and segment-level elasticities | Week 3 |
+| 5d | Causal forest for product-level elasticities | Done |
 | 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Week 3 |
 | 7 | Price optimizer that maximises expected profit under business constraints | Week 3 |
 | 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done (first version) |
@@ -175,6 +175,24 @@ second time after the ML step and EconML does not. Without that step the own imp
 Every category is price sensitive. Jewellery and Easter items are the least elastic, though their
 intervals are wide because they have few products. Full results:
 [reports/category_elasticities_real.csv](reports/category_elasticities_real.csv)
+
+**By product** ([`forest.py`](src/econocausal/forest.py)): a causal forest (econml's generalized random
+forest) fitted on the same cross-fitted DML residuals, with product-level effect modifiers: category,
+typical price, and average guest and UK shares. Every product gets an elasticity with a 95% interval.
+
+- 1,877 products; median −1.31, 10th–90th percentile −1.64 to −0.98; 99.9% have an interval below zero.
+- Individual intervals are wide (median width 0.56), so the forest is most useful for the *pattern*.
+- The main drivers are the product's **share of guest buyers** (importance 0.61) and its **price level**
+  (0.26); category adds little once these are known.
+- Products bought almost only by registered (mostly wholesale) customers are the most price sensitive
+  (about −1.54), and more expensive products are more price sensitive (−1.17 for the cheapest fifth,
+  −1.42 for the most expensive).
+
+![Elasticity drivers](reports/figures/11_elasticity_drivers.png)
+
+Notebook: [notebooks/03_heterogeneity.ipynb](notebooks/03_heterogeneity.ipynb) · all product estimates:
+[reports/product_elasticities_real.csv](reports/product_elasticities_real.csv). The API's
+`/products/{stock_code}/elasticity` now returns the product-level estimate.
 
 ## Tech stack
 
