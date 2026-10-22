@@ -8,6 +8,7 @@ Tables written by the data pipeline:
 Tables written by the models:
     results              one row per (dataset, method) elasticity estimate
     segment_elasticity   one row per (dataset, method, segment, value), e.g. per category
+    product_elasticity   one row per (dataset, method, stock_code), from the causal forest
 """
 
 from pathlib import Path
@@ -99,6 +100,19 @@ def save_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
 def save_segment_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
     """Add per-segment estimates to `segment_elasticity` (key: dataset, method, segment, value)."""
     return upsert_table(results, "segment_elasticity", SEGMENT_KEYS, engine)
+
+
+PRODUCT_KEYS = ["dataset", "method", "stock_code"]
+
+
+def save_product_results(results: pd.DataFrame, engine: Engine) -> pd.DataFrame:
+    """Add per-product estimates to `product_elasticity` (key: dataset, method, stock_code)."""
+    table = upsert_table(results, "product_elasticity", PRODUCT_KEYS, engine)
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_product_elasticity_code ON product_elasticity (stock_code)"
+        ))
+    return table
 
 
 def load_panel(engine: Engine | None = None) -> pd.DataFrame:

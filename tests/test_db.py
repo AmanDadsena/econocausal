@@ -7,6 +7,7 @@ from econocausal.data.db import (
     load_panel,
     read_table,
     save_panel,
+    save_product_results,
     save_results,
     save_segment_results,
 )
@@ -74,6 +75,18 @@ def test_save_segment_results_replaces_matching_rows(engine):
     assert len(table) == 2
     assert table.loc["bags", "estimate"] == -1.1
     assert table.loc["christmas", "estimate"] == -2.0
+
+
+def test_save_product_results_replaces_matching_rows(engine):
+    first = pd.DataFrame({
+        "dataset": "real", "method": "causal_forest",
+        "stock_code": ["22386", "47566"], "estimate": [-1.4, -1.2],
+    })
+    save_product_results(first, engine)
+    table = save_product_results(first.iloc[[1]].assign(estimate=-1.25), engine).set_index("stock_code")
+    assert len(table) == 2
+    assert table.loc["47566", "estimate"] == -1.25
+    assert table.loc["22386", "estimate"] == -1.4
 
 
 def test_read_missing_table_gives_clear_error(engine):

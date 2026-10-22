@@ -257,35 +257,48 @@ def elasticity_by_category(
 def product_elasticity(stock_code: str, db: EngineDep) -> dict:
     """Price elasticity for one product.
 
-    Currently this is the DML estimate for the product's **category** (products in the
-    same category share one elasticity). Product-level estimates will come from a causal
-    forest model."""
+    Uses the causal forest's product-level estimate (`level: "product"`) when available,
+    otherwise the DML estimate for the product's category (`level: "category"`)."""
     require_tables(db, "products", "segment_elasticity", "results")
     info = product(stock_code, db)
-    seg = query(
-        db,
-        """
-        SELECT estimate, ci_low, ci_high FROM segment_elasticity
-        WHERE dataset = 'real' AND segment = 'category' AND method = :method AND value = :category
-        """,
-        method=DEFAULT_METHOD, category=info["category"],
-    )
+
+    estimate = pd.DataFrame()
+    level = "product"
+    if inspect(db).has_table("product_elasticity"):
+        estimate = query(
+            db,
+            """
+            SELECT estimate, ci_low, ci_high FROM product_elasticity
+            WHERE dataset = 'real' AND method = 'causal_forest' AND stock_code = :code
+            """,
+            code=info["stock_code"],
+        )
+    if estimate.empty:
+        level = "category"
+        estimate = query(
+            db,
+            """
+            SELECT estimate, ci_low, ci_high FROM segment_elasticity
+            WHERE dataset = 'real' AND segment = 'category' AND method = :method AND value = :category
+            """,
+            method=DEFAULT_METHOD, category=info["category"],
+        )
     overall = query(
         db, "SELECT estimate FROM results WHERE dataset = 'real' AND method = :method",
         method=DEFAULT_METHOD,
     )
-    if seg.empty or overall.empty:
+    if estimate.empty or overall.empty:
         raise HTTPException(status_code=503, detail="Elasticity results missing. Run `python -m econocausal.run_dml`.")
 
-    e = float(seg["estimate"].iloc[0])
+    e = float(estimate["estimate"].iloc[0])
     return {
         "stock_code": info["stock_code"],
         "description": info["description"],
         "category": info["category"],
         "elasticity": e,
-        "ci_low": float(seg["ci_low"].iloc[0]),
-        "ci_high": float(seg["ci_high"].iloc[0]),
-        "level": "category",
+        "ci_low": float(estimate["ci_low"].iloc[0]),
+        "ci_high": float(estimate["ci_high"].iloc[0]),
+        "level": level,
         "overall_elasticity": float(overall["estimate"].iloc[0]),
         "interpretation": (
             f"A 1% price increase {'lowers' if e < 0 else 'raises'} weekly units sold "

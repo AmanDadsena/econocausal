@@ -2,7 +2,13 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from econocausal.data.db import get_engine, save_panel, save_results, save_segment_results
+from econocausal.data.db import (
+    get_engine,
+    save_panel,
+    save_product_results,
+    save_results,
+    save_segment_results,
+)
 
 
 def make_panel() -> pd.DataFrame:
@@ -51,6 +57,16 @@ def api_db(tmp_path, monkeypatch):
             "estimate": [-1.37, -1.53, -1.11], "std_error": [0.09, 0.07, 0.1],
             "ci_low": [-1.55, -1.66, -1.31], "ci_high": [-1.18, -1.39, -0.91],
             "n_obs": [7330, 10085, 2812], "n_groups": [94, 157, 60],
+        }),
+        engine,
+    )
+    # Product-level (causal forest) estimate for one product only, so both the
+    # product-level and the category fallback paths of the API can be tested.
+    save_product_results(
+        pd.DataFrame({
+            "dataset": ["real"], "method": ["causal_forest"], "stock_code": ["85123A"],
+            "description": ["WHITE HANGING HEART T-LIGHT HOLDER"], "category": ["candles_lighting"],
+            "estimate": [-1.62], "ci_low": [-1.80], "ci_high": [-1.44], "n_obs": [3],
         }),
         engine,
     )

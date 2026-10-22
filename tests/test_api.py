@@ -99,6 +99,13 @@ def test_product_elasticity_uses_its_category(client):
     assert body["interpretation"] == "A 1% price increase lowers weekly units sold by about 1.37%."
 
 
+def test_product_elasticity_prefers_product_level_estimate(client):
+    body = client.get("/products/85123A/elasticity").json()
+    assert body["level"] == "product"
+    assert body["elasticity"] == -1.62
+    assert (body["ci_low"], body["ci_high"]) == (-1.80, -1.44)
+
+
 def test_product_elasticity_unknown_product(client):
     assert client.get("/products/NOPE/elasticity").status_code == 404
 

@@ -167,12 +167,16 @@ def residualize(
     return residuals, outcome_r2, treatment_r2
 
 
-def estimate_elasticity(df: pd.DataFrame, **kwargs) -> DMLResult:
+def estimate_elasticity(
+    df: pd.DataFrame, residualized: tuple | None = None, **kwargs
+) -> DMLResult:
     """Estimate the average price elasticity with DML.
 
-    Keyword arguments are passed to `residualize` (features, models, folds, seed).
+    `residualized` is the output of `residualize(df)`; pass it to reuse residuals that
+    were already computed. Otherwise keyword arguments go to `residualize`
+    (features, models, folds, seed).
     """
-    residuals, outcome_r2, treatment_r2 = residualize(df, **kwargs)
+    residuals, outcome_r2, treatment_r2 = residualized or residualize(df, **kwargs)
     groups = residuals[GROUP].to_numpy()
     theta, se, low, high = final_stage(residuals["y"].to_numpy(), residuals["t"].to_numpy(), groups)
     return DMLResult(
@@ -187,17 +191,19 @@ def estimate_elasticity(df: pd.DataFrame, **kwargs) -> DMLResult:
     )
 
 
-def estimate_by_segment(df: pd.DataFrame, segment: str = "category", **kwargs) -> pd.DataFrame:
+def estimate_by_segment(
+    df: pd.DataFrame, segment: str = "category", residualized: tuple | None = None, **kwargs
+) -> pd.DataFrame:
     """Elasticity for each value of `segment` (e.g. each product category).
 
     The nuisance models are fitted once on all the data; the final stage is then run
     separately on each segment's residuals. This is the same as a DML model where the
     elasticity is allowed to differ by segment (a separate θ per category), and it uses
     all products to learn the confounder effects, so small categories still get good
-    nuisance models.
+    nuisance models. `residualized` works as in `estimate_elasticity`.
     """
     df = df.reset_index(drop=True)
-    residuals, _, _ = residualize(df, **kwargs)
+    residuals, _, _ = residualized or residualize(df, **kwargs)
     rows = []
     for value, part in residuals.groupby(df[segment], observed=True):
         groups = part[GROUP].to_numpy()
