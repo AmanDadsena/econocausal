@@ -2,15 +2,18 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (20 Oct 2026)
+## Status (22 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
-EconML comparison, REST API and first dashboard. 72 automated tests.
+EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
+(causal forest) and robustness checks done. 84 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
 - **Result:** on 126,672 real product-weeks, a 1% price increase lowers weekly units sold by about
   **1.28%** (DML, 95% CI 1.23%–1.32%). The best naive regression overstates this at 1.53%.
+- **Robust:** a placebo with shuffled prices gives −0.001, a random fake confounder changes nothing, and
+  random halves of the data give −1.23 to −1.27.
 
 ## Problem
 
@@ -45,7 +48,7 @@ recommend prices.
 | 5b | EconML `LinearDML` for comparison | Done |
 | 5c | Elasticity by category | Done |
 | 5d | Causal forest for product-level elasticities | Done |
-| 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Week 3 |
+| 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Done |
 | 7 | Price optimizer that maximises expected profit under business constraints | Week 3 |
 | 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done (first version) |
 | 9 | Docker, CI and online deployment | Week 4 |
@@ -72,7 +75,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 72 tests (pytest) |
+| `tests/` | 84 tests (pytest) |
 
 ## Data
 
@@ -189,6 +192,14 @@ typical price, and average guest and UK shares. Every product gets an elasticity
   −1.42 for the most expensive).
 
 ![Elasticity drivers](reports/figures/11_elasticity_drivers.png)
+
+**Robustness** ([docs/robustness.md](docs/robustness.md), `python -m econocausal.robustness`): all checks pass.
+
+| Check | Estimate | Expected |
+|-------|---------:|----------|
+| Placebo: prices shuffled within each product | −0.001 | about 0 |
+| Random noise added as a confounder | −1.276 | about −1.275 |
+| Random halves of the products (3 runs) | −1.23 to −1.27 | about −1.275 |
 
 Notebook: [notebooks/03_heterogeneity.ipynb](notebooks/03_heterogeneity.ipynb) · all product estimates:
 [reports/product_elasticities_real.csv](reports/product_elasticities_real.csv). The API's

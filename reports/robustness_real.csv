@@ -1,0 +1,7 @@
+check,estimate,ci_low,ci_high,n_obs,expected,passed,change,dataset
+original,-1.2751,-1.3198,-1.2304,126672,-,True,,real
+placebo_treatment,-0.0007,-0.0185,0.0172,126672,close to 0 (CI contains 0),True,,real
+random_common_cause,-1.276,-1.3208,-1.2312,126672,within 0.1 of -1.275,True,-0.0009,real
+subset_1,-1.2571,-1.3211,-1.193,63786,within 0.1 of -1.275,True,0.018,real
+subset_2,-1.231,-1.2846,-1.1773,63639,within 0.1 of -1.275,True,0.0441,real
+subset_3,-1.2701,-1.3269,-1.2134,62241,within 0.1 of -1.275,True,0.0049,real
