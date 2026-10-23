@@ -37,7 +37,7 @@ OLS does not; results available through the API and dashboard.
 
 - [x] Causal forest for product- and segment-level elasticities
 - [x] Robustness checks: placebo, random common cause, data subsets
-- [ ] Price optimizer with price bounds and margin constraints
+- [x] Price optimizer with price bounds and margin constraints
 - [ ] Optimizer and simulator endpoints with tests
 - [ ] Full dashboard: elasticity, segments, simulator, optimizer
 - [ ] Docker, CI, deployment

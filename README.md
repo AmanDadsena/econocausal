@@ -2,11 +2,11 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (22 Oct 2026)
+## Status (23 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest) and robustness checks done. 84 automated tests.
+(causal forest), robustness checks and the price optimizer done. 129 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -49,7 +49,7 @@ recommend prices.
 | 5c | Elasticity by category | Done |
 | 5d | Causal forest for product-level elasticities | Done |
 | 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Done |
-| 7 | Price optimizer that maximises expected profit under business constraints | Week 3 |
+| 7 | Price optimizer that maximises expected profit under business constraints | Done |
 | 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done (first version) |
 | 9 | Docker, CI and online deployment | Week 4 |
 
@@ -75,7 +75,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 84 tests (pytest) |
+| `tests/` | 129 tests (pytest) |
 
 ## Data
 
@@ -193,6 +193,20 @@ typical price, and average guest and UK shares. Every product gets an elasticity
 
 ![Elasticity drivers](reports/figures/11_elasticity_drivers.png)
 
+**Pricing** ([docs/pricing.md](docs/pricing.md), `python -m econocausal.optimize`): profit-maximising price
+per product from its elasticity, within ±20% of the current price and a 20% minimum margin. Unit cost is
+not in the data and is assumed at 60% of the current price.
+
+| | Current | Recommended |
+|---|---:|---:|
+| Products with a price rise | – | 1,637 of 1,637 (1,630 at the +20% limit) |
+| Weekly revenue | £120,097 | £114,635 (−4.5%) |
+| Weekly profit | £48,039 | £57,300 (+19.3%) |
+
+With elasticities around −1.3, the profit-maximising markup is far above today's prices, so the price
+limit decides. The direction holds for any assumed cost share of 50% or more; the size of the profit gain
+depends on it (+11% at 50%, +33% at 70%).
+
 **Robustness** ([docs/robustness.md](docs/robustness.md), `python -m econocausal.robustness`): all checks pass.
 
 | Check | Estimate | Expected |
@@ -271,7 +285,7 @@ runs elsewhere).
 | Week | Focus | Status |
 |------|-------|--------|
 | 1 | Setup, data pipeline, EDA, synthetic data, naive baselines | Done ([notes](docs/progress/week1.md)) |
-| 2 | DML (manual + EconML), API, first dashboard | Done |
+| 2 | DML (manual + EconML), API, first dashboard | Done ([notes](docs/progress/week2.md)) |
 | 3 | Heterogeneous effects, robustness checks, price optimizer | Not started |
 | 4 | Full dashboard, Docker, CI, deployment | Not started |
 
