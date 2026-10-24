@@ -2,11 +2,11 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (23 Oct 2026)
+## Status (24 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest), robustness checks and the price optimizer done. 129 automated tests.
+(causal forest), robustness checks, the price optimizer and its API endpoints done. 154 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -75,7 +75,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 129 tests (pytest) |
+| `tests/` | 154 tests (pytest) |
 
 ## Data
 
@@ -265,9 +265,21 @@ Interactive API docs: http://localhost:8000/docs
 | `GET /products?category=&search=&limit=&offset=` | products, best sellers first |
 | `GET /products/{stock_code}` | one product's summary |
 | `GET /products/{stock_code}/sales` | weekly price, units, revenue, guest share |
-| `GET /products/{stock_code}/elasticity` | the product's (category-level) elasticity |
+| `GET /products/{stock_code}/elasticity` | the product's elasticity (product-level from the causal forest, else its category) |
 | `GET /elasticity?dataset=real\|synthetic` | average elasticity from every method |
 | `GET /elasticity/categories` | elasticity per category |
+| `POST /optimal-price` | best price for a product under given rules (max change, min margin, cost share, profit or revenue) |
+| `POST /simulate` | expected units, revenue and profit at up to 50 candidate prices, with a range from the elasticity's 95% CI |
+| `GET /recommendations?category=&reason=&sort=` | stored catalogue-wide recommendations, largest profit gain first |
+
+Example (Command Prompt or bash; the easiest way is the **Try it out** button on http://localhost:8000/docs):
+
+```bash
+curl -X POST http://localhost:8000/optimal-price -H "Content-Type: application/json" -d "{\"stock_code\": \"22386\"}"
+```
+
+All request bodies are validated (ranges, list sizes, allowed values, unknown fields rejected), and all
+SQL is parameterised; the API never writes to the database.
 
 **3. Start the dashboard** (terminal 2):
 

@@ -8,6 +8,7 @@ from econocausal.data.db import (
     save_product_results,
     save_results,
     save_segment_results,
+    save_table,
 )
 
 
@@ -68,6 +69,17 @@ def api_db(tmp_path, monkeypatch):
             "description": ["WHITE HANGING HEART T-LIGHT HOLDER"], "category": ["candles_lighting"],
             "estimate": [-1.62], "ci_low": [-1.80], "ci_high": [-1.44], "n_obs": [3],
         }),
+        engine,
+    )
+    save_table(
+        pd.DataFrame({
+            "stock_code": ["22386", "22086"], "description": ["JUMBO BAG PINK POLKADOT", "PAPER CHAIN KIT"],
+            "category": ["bags", "christmas"], "current_price": [2.145, 3.245],
+            "recommended_price": [2.574, 3.894], "price_change_pct": [20.0, 20.0],
+            "elasticity": [-1.37, -1.11], "reason": ["upper price limit", "upper price limit"],
+            "current_profit": [10.0, 20.0], "expected_profit": [11.5, 26.0], "profit_change_pct": [15.0, 30.0],
+        }),
+        "price_recommendations",
         engine,
     )
     monkeypatch.setenv("ECONOCAUSAL_DB", str(path))
