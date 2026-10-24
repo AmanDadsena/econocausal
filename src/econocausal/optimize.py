@@ -80,6 +80,9 @@ class PricingRules:
             raise ValueError("objective must be 'profit' or 'revenue'")
 
 
+DEFAULT_RULES = PricingRules()
+
+
 def best_price(base_price: float, elasticity: float, unit_cost: float, rules: PricingRules):
     """Best price within the rules, and which limit (if any) decided it.
 
@@ -109,7 +112,7 @@ def recommend_price(
     base_price: float,
     base_quantity: float,
     elasticity: float,
-    rules: PricingRules = PricingRules(),
+    rules: PricingRules = DEFAULT_RULES,
     elasticity_low: float | None = None,
     elasticity_high: float | None = None,
 ) -> dict:
@@ -156,14 +159,20 @@ def recommend_price(
     return out
 
 
-def pricing_inputs(panel: pd.DataFrame, recent_weeks: int = 13) -> pd.DataFrame:
+def pricing_inputs(
+    panel: pd.DataFrame, recent_weeks: int = 13, last_week: pd.Timestamp | None = None
+) -> pd.DataFrame:
     """Current price and weekly units for every product, from the last `recent_weeks` weeks.
 
     current price  median weekly price over the product's sale weeks in that window
     current units  total units in the window / recent_weeks (weeks with no sales count as 0)
     Products with no sales in the window are left out.
+
+    `last_week` is the final week of the window; by default the last week in `panel`. Pass
+    the data's last week when `panel` holds only some products, so every product is priced
+    on the same window.
     """
-    last_week = panel["week_start"].max()
+    last_week = panel["week_start"].max() if last_week is None else pd.Timestamp(last_week)
     start = last_week - pd.Timedelta(weeks=recent_weeks - 1)
     recent = panel[panel["week_start"] >= start]
     return (
@@ -177,7 +186,7 @@ def pricing_inputs(panel: pd.DataFrame, recent_weeks: int = 13) -> pd.DataFrame:
 
 
 def optimize_products(
-    inputs: pd.DataFrame, elasticities: pd.DataFrame, rules: PricingRules = PricingRules()
+    inputs: pd.DataFrame, elasticities: pd.DataFrame, rules: PricingRules = DEFAULT_RULES
 ) -> pd.DataFrame:
     """Recommend a price for every product that has both pricing inputs and an elasticity.
 

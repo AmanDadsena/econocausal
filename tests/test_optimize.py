@@ -152,6 +152,14 @@ def test_pricing_inputs_use_the_recent_window():
     assert inputs.loc["B", "current_units"] == pytest.approx(4 * inputs.loc["B", "weeks_sold"] / 13)
 
 
+def test_pricing_inputs_for_one_product_use_the_shared_window():
+    panel = make_panel()
+    last_week = panel["week_start"].max()
+    alone = pricing_inputs(panel[panel["stock_code"] == "B"], last_week=last_week)
+    together = pricing_inputs(panel).set_index("stock_code").loc["B"]
+    assert alone["current_units"].iloc[0] == pytest.approx(together["current_units"])
+
+
 def test_optimize_products_and_summary():
     elasticities = pd.DataFrame({
         "stock_code": ["A", "B"], "description": ["MUG", "BAG"], "category": ["k", "b"],

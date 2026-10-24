@@ -2,7 +2,9 @@
 
 Serves the cleaned product data and the elasticity estimates stored in SQLite by the
 pipeline (`python -m econocausal.data.build`, `python -m econocausal.baselines`,
-`python -m econocausal.run_dml`). The API is read-only.
+`python -m econocausal.run_dml`, `python -m econocausal.optimize`), and calculates
+price recommendations and what-if simulations on request. The API never writes to the
+database.
 
 Run locally:
     uvicorn api.main:app --reload
@@ -24,13 +26,19 @@ from api.schemas import (
     Category,
     Estimate,
     Health,
+    OptimalPriceRequest,
+    OptimalPriceResponse,
     Product,
     ProductElasticity,
     ProductList,
+    RecommendationList,
     SegmentEstimate,
+    SimulateRequest,
+    SimulateResponse,
     WeeklySales,
 )
 from econocausal.data.db import DB_PATH, get_engine
+from econocausal.optimize import PricingRules, demand, pricing_inputs, recommend_price
 
 app = FastAPI(
     title="EconoCausal API",
@@ -185,17 +193,10 @@ def elasticity_by_category(
     return records(df)
 
 
-@app.get("/products/{stock_code}/elasticity", response_model=ProductElasticity, tags=["elasticity"])
-def product_elasticity(stock_code: str, db: EngineDep) -> dict:
-    """Price elasticity for one product.
-
-    Uses the causal forest's product-level estimate (`level: "product"`) when available,
-    otherwise the DML estimate for the product's category (`level: "category"`)."""
-    require_tables(db, "products", "segment_elasticity", "results")
-    info = product(stock_code, db)
-
-    estimate = pd.DataFrame()
-    level = "product"
+def elasticity_for(db: Engine, info: dict) -> tuple[float, float, float, str]:
+    """(estimate, ci_low, ci_high, level) for a product: the causal forest's product-level
+    estimate when available, otherwise the DML estimate for the product's category."""
+    estimate, level = pd.DataFrame(), "product"
     if inspect(db).has_table("product_elasticity"):
         estimate = query(
             db,
@@ -215,21 +216,34 @@ def product_elasticity(stock_code: str, db: EngineDep) -> dict:
             """,
             method=DEFAULT_METHOD, category=info["category"],
         )
+    if estimate.empty:
+        raise HTTPException(status_code=503, detail="Elasticity results missing. Run `python -m econocausal.run_dml`.")
+    row = estimate.iloc[0]
+    return float(row["estimate"]), float(row["ci_low"]), float(row["ci_high"]), level
+
+
+@app.get("/products/{stock_code}/elasticity", response_model=ProductElasticity, tags=["elasticity"])
+def product_elasticity(stock_code: str, db: EngineDep) -> dict:
+    """Price elasticity for one product.
+
+    Uses the causal forest's product-level estimate (`level: "product"`) when available,
+    otherwise the DML estimate for the product's category (`level: "category"`)."""
+    require_tables(db, "products", "segment_elasticity", "results")
+    info = product(stock_code, db)
+    e, low, high, level = elasticity_for(db, info)
     overall = query(
         db, "SELECT estimate FROM results WHERE dataset = 'real' AND method = :method",
         method=DEFAULT_METHOD,
     )
-    if estimate.empty or overall.empty:
+    if overall.empty:
         raise HTTPException(status_code=503, detail="Elasticity results missing. Run `python -m econocausal.run_dml`.")
-
-    e = float(estimate["estimate"].iloc[0])
     return {
         "stock_code": info["stock_code"],
         "description": info["description"],
         "category": info["category"],
         "elasticity": e,
-        "ci_low": float(estimate["ci_low"].iloc[0]),
-        "ci_high": float(estimate["ci_high"].iloc[0]),
+        "ci_low": low,
+        "ci_high": high,
         "level": level,
         "overall_elasticity": float(overall["estimate"].iloc[0]),
         "interpretation": (
@@ -237,3 +251,122 @@ def product_elasticity(stock_code: str, db: EngineDep) -> dict:
             f"by about {abs(e):.2f}%."
         ),
     }
+
+
+# --- pricing -----------------------------------------------------------------------
+
+PRICING_WINDOW_WEEKS = 13
+
+
+def pricing_basis(db: Engine, stock_code: str, cost_ratio: float) -> dict:
+    """Current price, current weekly units and elasticity for one product.
+
+    Uses the same 13-week window (ending at the last week in the data) as
+    `python -m econocausal.optimize`, so the API and the stored recommendations agree."""
+    require_tables(db, "products", "weekly_sales", "segment_elasticity")
+    info = product(stock_code, db)
+    last_week = pd.Timestamp(query(db, "SELECT MAX(week_start) AS w FROM weekly_sales")["w"].iloc[0])
+    sales = query(
+        db, "SELECT stock_code, week_start, price, quantity FROM weekly_sales WHERE stock_code = :code",
+        code=info["stock_code"],
+    )
+    sales["week_start"] = pd.to_datetime(sales["week_start"])
+    inputs = pricing_inputs(sales, recent_weeks=PRICING_WINDOW_WEEKS, last_week=last_week)
+    if inputs.empty:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Product '{info['stock_code']}' has no sales in the last {PRICING_WINDOW_WEEKS} "
+                   "weeks of data, so there is no current price to start from.",
+        )
+    e, low, high, level = elasticity_for(db, info)
+    current_price = float(inputs["current_price"].iloc[0])
+    start = last_week - pd.Timedelta(weeks=PRICING_WINDOW_WEEKS - 1)
+    return {
+        "stock_code": info["stock_code"],
+        "description": info["description"],
+        "category": info["category"],
+        "current_price": current_price,
+        "current_units": float(inputs["current_units"].iloc[0]),
+        "unit_cost": cost_ratio * current_price,
+        "elasticity": e,
+        "elasticity_ci_low": low,
+        "elasticity_ci_high": high,
+        "elasticity_level": level,
+        "window": f"{start:%Y-%m-%d} to {last_week + pd.Timedelta(days=6):%Y-%m-%d}",
+    }
+
+
+@app.post("/optimal-price", response_model=OptimalPriceResponse, tags=["pricing"])
+def optimal_price(request: OptimalPriceRequest, db: EngineDep) -> dict:
+    """Best price for one product under the given business rules.
+
+    The price may move at most `max_change` from the current price and must keep at least
+    `min_margin`. Unit cost is not in the data, so it is assumed to be `cost_ratio` times the
+    current price. `price_at_ci_low` / `price_at_ci_high` repeat the calculation at both ends
+    of the elasticity's 95% interval."""
+    basis = pricing_basis(db, request.stock_code, request.cost_ratio)
+    rules = PricingRules(max_change=request.max_change, min_margin=request.min_margin,
+                         cost_ratio=request.cost_ratio, objective=request.objective)
+    rec = recommend_price(basis["current_price"], basis["current_units"], basis["elasticity"], rules,
+                          elasticity_low=basis["elasticity_ci_low"],
+                          elasticity_high=basis["elasticity_ci_high"])
+    rec.pop("elasticity", None)
+    rec.pop("current_units", None)
+    return {**basis, **rec}
+
+
+@app.post("/simulate", response_model=SimulateResponse, tags=["pricing"])
+def simulate(request: SimulateRequest, db: EngineDep) -> dict:
+    """Expected weekly units, revenue and profit at each candidate price.
+
+    `units_low` / `units_high` use the two ends of the elasticity's 95% interval."""
+    basis = pricing_basis(db, request.stock_code, request.cost_ratio)
+    p0, q0, cost = basis["current_price"], basis["current_units"], basis["unit_cost"]
+    results = []
+    for price in request.prices:
+        units = float(demand(price, p0, q0, basis["elasticity"]))
+        bounds = [float(demand(price, p0, q0, basis[k])) for k in ("elasticity_ci_low", "elasticity_ci_high")]
+        results.append({
+            "price": price,
+            "price_change_pct": 100 * (price / p0 - 1),
+            "expected_units": units,
+            "units_low": min(bounds),
+            "units_high": max(bounds),
+            "expected_revenue": price * units,
+            "expected_profit": (price - cost) * units,
+            "margin_pct": 100 * (price - cost) / price,
+        })
+    return {**basis, "results": results}
+
+
+@app.get("/recommendations", response_model=RecommendationList, tags=["pricing"])
+def recommendations(
+    db: EngineDep,
+    category: str | None = None,
+    reason: str | None = None,
+    sort: Annotated[str, Query(pattern="^(profit_gain|price_change|stock_code)$")] = "profit_gain",
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> dict:
+    """Stored recommendations from `python -m econocausal.optimize` (default rules),
+    largest expected profit gain first."""
+    require_tables(db, "price_recommendations")
+    # Only fixed, whitelisted ORDER BY clauses are used; user input never enters the SQL text.
+    order = {
+        "profit_gain": "(expected_profit - current_profit) DESC",
+        "price_change": "price_change_pct DESC",
+        "stock_code": "stock_code ASC",
+    }[sort]
+    where = "WHERE (:category IS NULL OR category = :category) AND (:reason IS NULL OR reason = :reason)"
+    params = {"category": category, "reason": reason}
+    total = int(query(db, f"SELECT COUNT(*) AS n FROM price_recommendations {where}", **params)["n"].iloc[0])
+    df = query(
+        db,
+        f"""
+        SELECT stock_code, description, category, current_price, recommended_price, price_change_pct,
+               elasticity, reason, expected_profit, current_profit, profit_change_pct
+        FROM price_recommendations {where} ORDER BY {order} LIMIT :limit OFFSET :offset
+        """,
+        **params, limit=limit, offset=offset,
+    )
+    return {"total": total, "limit": limit, "offset": offset, "items": records(df)}
