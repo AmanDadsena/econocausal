@@ -18,9 +18,18 @@ from typing import Annotated
 
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query
-from pydantic import BaseModel
 from sqlalchemy import Engine, inspect, text
 
+from api.schemas import (
+    Category,
+    Estimate,
+    Health,
+    Product,
+    ProductElasticity,
+    ProductList,
+    SegmentEstimate,
+    WeeklySales,
+)
 from econocausal.data.db import DB_PATH, get_engine
 
 app = FastAPI(
@@ -57,83 +66,6 @@ def require_tables(db: Engine, *tables: str) -> None:
             status_code=503,
             detail=f"Missing tables {missing}. Run the data and model pipelines first.",
         )
-
-
-# --- response models -----------------------------------------------------------
-
-class Health(BaseModel):
-    status: str
-    tables: list[str]
-
-
-class Category(BaseModel):
-    category: str
-    n_products: int
-    total_revenue: float
-
-
-class Product(BaseModel):
-    stock_code: str
-    description: str | None
-    category: str
-    n_weeks: int
-    n_prices: int
-    median_price: float
-    min_price: float
-    max_price: float
-    total_quantity: int
-    total_revenue: float
-
-
-class ProductList(BaseModel):
-    total: int
-    limit: int
-    offset: int
-    items: list[Product]
-
-
-class WeeklySales(BaseModel):
-    week_start: str
-    price: float
-    quantity: int
-    revenue: float
-    guest_share: float
-
-
-class Estimate(BaseModel):
-    dataset: str
-    method: str
-    estimate: float
-    std_error: float
-    ci_low: float
-    ci_high: float
-    n_obs: int
-    true_value: float | None = None
-    outcome_r2: float | None = None
-    treatment_r2: float | None = None
-
-
-class SegmentEstimate(BaseModel):
-    segment: str
-    value: str
-    estimate: float
-    std_error: float
-    ci_low: float
-    ci_high: float
-    n_obs: int
-    n_groups: int
-
-
-class ProductElasticity(BaseModel):
-    stock_code: str
-    description: str | None
-    category: str
-    elasticity: float
-    ci_low: float
-    ci_high: float
-    level: str
-    overall_elasticity: float
-    interpretation: str
 
 
 # --- endpoints ---------------------------------------------------------------------
