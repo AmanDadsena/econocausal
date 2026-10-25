@@ -2,11 +2,11 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (24 Oct 2026)
+## Status (25 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest), robustness checks, the price optimizer and its API endpoints done. 154 automated tests.
+(causal forest), robustness checks, the price optimizer, its API endpoints and the full five-page dashboard done. 155 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -50,7 +50,7 @@ recommend prices.
 | 5d | Causal forest for product-level elasticities | Done |
 | 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Done |
 | 7 | Price optimizer that maximises expected profit under business constraints | Done |
-| 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done (first version) |
+| 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done |
 | 9 | Docker, CI and online deployment | Week 4 |
 
 ## Architecture
@@ -75,7 +75,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 154 tests (pytest) |
+| `tests/` | 155 tests (pytest) |
 
 ## Data
 
@@ -289,6 +289,16 @@ streamlit run app/streamlit_app.py
 
 Opens at http://localhost:8501. It reads everything from the API (set `ECONOCAUSAL_API` if the API
 runs elsewhere).
+
+| Page | What it shows |
+|------|---------------|
+| Overview | headline elasticity; naive OLS vs DML on real and synthetic data |
+| Elasticity | elasticity by category, distribution of product elasticities, most and least price-sensitive products |
+| Products | search any product; weekly price and units history; its elasticity |
+| Price simulator | move a price slider and see expected units, revenue and profit (with the elasticity's uncertainty band) |
+| Optimizer | recommended price for a product under your own rules (price limit, margin, cost share, profit or revenue), plus the whole catalogue |
+
+The selected product stays selected when switching between pages.
 
 **Tests:** `pytest`
 

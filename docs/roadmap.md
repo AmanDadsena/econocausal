@@ -39,7 +39,7 @@ OLS does not; results available through the API and dashboard.
 - [x] Robustness checks: placebo, random common cause, data subsets
 - [x] Price optimizer with price bounds and margin constraints
 - [x] Optimizer and simulator endpoints with tests
-- [ ] Full dashboard: elasticity, segments, simulator, optimizer
+- [x] Full dashboard: elasticity, segments, simulator, optimizer
 - [ ] Docker, CI, deployment
 
 **Milestone:** working deployed app with price recommendations.

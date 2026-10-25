@@ -21,6 +21,7 @@ pages = st.navigation(
         ],
         "Pricing": [
             st.Page("views/simulator.py", title="Price simulator", icon="🎚️"),
+            st.Page("views/optimizer.py", title="Optimizer", icon="💷"),
         ],
     }
 )
