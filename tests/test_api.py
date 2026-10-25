@@ -121,3 +121,12 @@ def test_missing_tables_return_503(tmp_path, monkeypatch):
     engine.cache_clear()
     assert r.status_code == 503
     assert "Run the data and model pipelines" in r.json()["detail"]
+
+
+def test_elasticity_products_list(client):
+    body = client.get("/elasticity/products").json()
+    assert body["total"] == 1
+    item = body["items"][0]
+    assert (item["stock_code"], item["estimate"], item["category"]) == ("85123A", -1.62, "candles_lighting")
+    assert client.get("/elasticity/products", params={"category": "bags"}).json()["total"] == 0
+    assert client.get("/elasticity/products", params={"sort": "bad; DROP"}).status_code == 422

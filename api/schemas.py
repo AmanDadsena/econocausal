@@ -182,3 +182,20 @@ class RecommendationList(BaseModel):
     limit: int
     offset: int
     items: list[Recommendation]
+
+
+class ProductEstimate(BaseModel):
+    stock_code: str
+    description: str | None
+    category: str
+    estimate: float
+    ci_low: float
+    ci_high: float
+    n_obs: int
+
+
+class ProductEstimateList(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[ProductEstimate]

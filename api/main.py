@@ -30,6 +30,7 @@ from api.schemas import (
     OptimalPriceResponse,
     Product,
     ProductElasticity,
+    ProductEstimateList,
     ProductList,
     RecommendationList,
     SegmentEstimate,
@@ -191,6 +192,31 @@ def elasticity_by_category(
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No category estimates for method '{method}'")
     return records(df)
+
+
+@app.get("/elasticity/products", response_model=ProductEstimateList, tags=["elasticity"])
+def elasticity_by_product(
+    db: EngineDep,
+    category: str | None = None,
+    sort: Annotated[str, Query(pattern="^(most_elastic|least_elastic|stock_code)$")] = "most_elastic",
+    limit: Annotated[int, Query(ge=1, le=2000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> dict:
+    """Product-level elasticities from the causal forest (real data)."""
+    require_tables(db, "product_elasticity")
+    # Fixed, whitelisted ORDER BY clauses only; user input never enters the SQL text.
+    order = {"most_elastic": "estimate ASC", "least_elastic": "estimate DESC", "stock_code": "stock_code ASC"}[sort]
+    where = "WHERE dataset = 'real' AND method = 'causal_forest' AND (:category IS NULL OR category = :category)"
+    total = int(query(db, f"SELECT COUNT(*) AS n FROM product_elasticity {where}", category=category)["n"].iloc[0])
+    df = query(
+        db,
+        f"""
+        SELECT stock_code, description, category, estimate, ci_low, ci_high, n_obs
+        FROM product_elasticity {where} ORDER BY {order} LIMIT :limit OFFSET :offset
+        """,
+        category=category, limit=limit, offset=offset,
+    )
+    return {"total": total, "limit": limit, "offset": offset, "items": records(df)}
 
 
 def elasticity_for(db: Engine, info: dict) -> tuple[float, float, float, str]:
