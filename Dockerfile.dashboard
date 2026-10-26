@@ -1,0 +1,31 @@
+# EconoCausal dashboard (Streamlit)
+#
+#   docker build -f Dockerfile.dashboard -t econocausal-dashboard .
+#   docker run -p 8501:8501 -e ECONOCAUSAL_API=http://host.docker.internal:8000 econocausal-dashboard
+#
+# The dashboard reads everything from the API; set ECONOCAUSAL_API to its address.
+
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    ECONOCAUSAL_API=http://localhost:8000
+
+WORKDIR /app
+
+COPY requirements-dashboard.txt .
+RUN pip install -r requirements-dashboard.txt
+
+COPY app ./app
+
+RUN useradd --create-home --uid 1000 appuser
+USER appuser
+
+EXPOSE 8501
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:' + __import__('os').environ.get('PORT', '8501') + '/_stcore/health', timeout=4)"
+
+CMD ["sh", "-c", "streamlit run app/streamlit_app.py --server.address 0.0.0.0 --server.port ${PORT:-8501} --server.headless true"]

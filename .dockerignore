@@ -1,0 +1,10 @@
+# Allow-list: send only what the images need to the Docker build.
+*
+!pyproject.toml
+!requirements-api.txt
+!requirements-dashboard.txt
+!src/
+!api/
+!app/
+**/__pycache__
+**/*.egg-info

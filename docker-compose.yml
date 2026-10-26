@@ -1,0 +1,30 @@
+# Run the API and the dashboard together:
+#
+#   docker compose up --build
+#
+# Dashboard: http://localhost:8501 · API docs: http://localhost:8000/docs
+# Needs data/econocausal.db, built by the pipeline (see README "How to run").
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      ECONOCAUSAL_API: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

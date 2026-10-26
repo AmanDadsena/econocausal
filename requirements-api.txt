@@ -1,0 +1,8 @@
+# Runtime dependencies of the API only (see api/ and the econocausal modules it imports).
+# The ML libraries are not needed to serve stored results.
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+pandas>=2.1
+numpy>=1.26
+sqlalchemy>=2.0
