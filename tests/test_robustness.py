@@ -3,9 +3,10 @@ import pytest
 from econocausal.dml import estimate_elasticity
 from econocausal.robustness import data_subsets, placebo_treatment, random_common_cause, run_all
 from econocausal.simulate import TRUE_ELASTICITY, simulate_panel
+
 from test_dml import fast_model
 
-FAST = dict(model_y=fast_model(), model_t=fast_model())
+FAST = {"model_y": fast_model(), "model_t": fast_model()}
 
 
 @pytest.fixture(scope="module")

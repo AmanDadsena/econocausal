@@ -15,7 +15,7 @@ products = pd.DataFrame(call_or_stop(api_get, "/elasticity/products", limit=2000
 
 # --- categories -----------------------------------------------------------------------
 st.subheader("By category")
-labels = [f"{v.replace('_', ' ')} ({n})" for v, n in zip(categories["value"], categories["n_groups"])]
+labels = [f"{v.replace('_', ' ')} ({n})" for v, n in zip(categories["value"], categories["n_groups"], strict=True)]
 st.plotly_chart(
     estimate_chart(categories, labels, pd.Series([True] * len(categories)),
                    reference=average, reference_label=f"average {average:.2f}", height=440),
@@ -42,13 +42,13 @@ hist = go.Figure(go.Histogram(x=products["estimate"], nbinsx=45, marker_color=BL
                               hovertemplate="Elasticity %{x}<br>%{y} products<extra></extra>"))
 hist.add_vline(x=average, line_dash="dash", line_color=REFERENCE)
 hist.add_annotation(x=average, y=1, yref="paper", yanchor="bottom", showarrow=False,
-                    text=f"average (DML) {average:.2f}", font=dict(color=REFERENCE))
+                    text=f"average (DML) {average:.2f}", font={"color": REFERENCE})
 # Fixed range from the data, so the label never stretches the axis on narrow screens.
 pad = 0.1
 hist.update_xaxes(title="Product price elasticity (causal forest)",
                   range=[products["estimate"].min() - pad, products["estimate"].max() + pad])
 hist.update_yaxes(title="Products")
-style(hist, 300).update_layout(bargap=0.05, margin=dict(t=30))
+style(hist, 300).update_layout(bargap=0.05, margin={"t": 30})
 st.plotly_chart(hist, use_container_width=True)
 st.caption("Each product's estimate comes from a causal forest fitted on the same DML residuals. "
            "Individual intervals are wide, so the pattern is more reliable than any single value.")

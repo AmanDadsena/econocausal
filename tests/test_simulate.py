@@ -11,7 +11,7 @@ from econocausal.simulate import (
     simulate_panel,
 )
 
-SMALL = dict(n_products=120, n_weeks=104)
+SMALL = {"n_products": 120, "n_weeks": 104}
 
 
 @pytest.fixture(scope="module")

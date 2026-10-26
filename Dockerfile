@@ -25,8 +25,10 @@ RUN pip install --no-deps .
 
 COPY api ./api
 
-# Run as an unprivileged user.
-RUN useradd --create-home --uid 1000 appuser
+# Run as an unprivileged user. /app/data is where the database is mounted; it is created
+# here so the API also starts (with no tables) when nothing is mounted.
+RUN useradd --create-home --uid 1000 appuser \
+    && mkdir -p /app/data && chown appuser /app/data
 USER appuser
 
 EXPOSE 8000

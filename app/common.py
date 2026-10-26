@@ -76,12 +76,12 @@ def call_or_stop(func, *args, **kwargs):
 def style(fig: go.Figure, height: int, legend: bool = False) -> go.Figure:
     fig.update_layout(
         height=height,
-        margin=dict(l=10, r=10, t=10, b=10),
+        margin={"l": 10, "r": 10, "t": 10, "b": 10},
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         showlegend=legend,
-        font=dict(size=13),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        font={"size": 13},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
     )
     fig.update_xaxes(gridcolor="rgba(128,128,128,0.2)", zeroline=False)
     fig.update_yaxes(gridcolor="rgba(128,128,128,0.2)", zeroline=False)
@@ -98,12 +98,12 @@ def estimate_chart(df: pd.DataFrame, labels: list[str], highlight: pd.Series,
             x=df["estimate"],
             y=labels,
             mode="markers",
-            marker=dict(size=11, color=colors),
-            error_x=dict(
-                type="data", symmetric=False,
-                array=df["ci_high"] - df["estimate"], arrayminus=df["estimate"] - df["ci_low"],
-                thickness=2.5, width=0, color="rgba(128,128,128,0.6)",
-            ),
+            marker={"size": 11, "color": colors},
+            error_x={
+                "type": "data", "symmetric": False,
+                "array": df["ci_high"] - df["estimate"], "arrayminus": df["estimate"] - df["ci_low"],
+                "thickness": 2.5, "width": 0, "color": "rgba(128,128,128,0.6)",
+            },
             customdata=df[["ci_low", "ci_high"]],
             hovertemplate="%{y}<br>Elasticity %{x:.3f}<br>95% CI %{customdata[0]:.3f} to %{customdata[1]:.3f}<extra></extra>",
         )
@@ -120,8 +120,8 @@ def estimate_chart(df: pd.DataFrame, labels: list[str], highlight: pd.Series,
         fig.add_vline(x=reference, line_dash="dash", line_color=REFERENCE)
         # Label anchored to the top edge of the plot area, in the margin above the rows.
         fig.add_annotation(x=reference, y=1, yref="paper", yanchor="bottom", showarrow=False,
-                           text=reference_label, font=dict(color=REFERENCE))
-        fig.update_layout(margin=dict(t=30))
+                           text=reference_label, font={"color": REFERENCE})
+        fig.update_layout(margin={"t": 30})
     return fig
 
 

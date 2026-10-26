@@ -18,3 +18,15 @@ pythonpath = ["src", "."]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, warnings, import order, bugbear, comprehensions, pyupgrade.
+select = ["E", "F", "W", "I", "B", "C4", "UP"]
+# Long lines are allowed where splitting would hurt readability (docstrings, tables, SQL).
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["econocausal", "api"]
+# Modules imported by plain name from their own folder: app/common.py and tests/test_dml.py.
+known-local-folder = ["common", "test_dml"]

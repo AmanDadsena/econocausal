@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.17.0
+      - run: ruff check .
+
+  test:
+    name: Tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      # The tests use synthetic data and small temporary databases, so the
+      # Online Retail II download is not needed here.
+      - name: Run tests
+        run: pytest -q
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t econocausal-api .
+      - name: Build dashboard image
+        run: docker build -f Dockerfile.dashboard -t econocausal-dashboard .
+      - name: Start both containers
+        run: |
+          docker network create econocausal
+          docker run -d --name api --network econocausal -p 8000:8000 econocausal-api
+          docker run -d --name dashboard --network econocausal -p 8501:8501 \
+            -e ECONOCAUSAL_API=http://api:8000 econocausal-dashboard
+      - name: Check health endpoints
+        run: |
+          for url in http://localhost:8000/health http://localhost:8501/_stcore/health; do
+            for i in $(seq 1 30); do
+              if curl -fsS "$url"; then echo " <- $url OK"; break; fi
+              if [ "$i" = 30 ]; then echo "$url did not respond"; exit 1; fi
+              sleep 2
+            done
+          done
+      - name: Container logs
+        if: always()
+        run: |
+          docker logs api || true
+          docker logs dashboard || true

@@ -12,7 +12,7 @@ class MemorisingModel(BaseEstimator, RegressorMixin):
     Used to prove that no row is predicted by a model trained on it."""
 
     def fit(self, X, y):
-        self.seen_ = dict(zip(X["row_id"], y))
+        self.seen_ = dict(zip(X["row_id"], y, strict=True))
         return self
 
     def predict(self, X):

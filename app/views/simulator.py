@@ -79,7 +79,7 @@ with right:
                       fillcolor="rgba(128,128,128,0.08)", line_width=0)
         fig.add_vline(x=p0, line_dash="dot", line_color=REFERENCE)
         fig.add_annotation(x=p0, y=1, yref="paper", yanchor="bottom", showarrow=False,
-                           text="current", font=dict(color=REFERENCE))
+                           text="current", font={"color": REFERENCE})
         fig.update_xaxes(title="Price (£)", tickprefix="£",
                          range=[p0 * (1 - SLIDER_CHANGE), p0 * (1 + SLIDER_CHANGE)])
         fig.update_yaxes(title=title, tickformat=fmt)
@@ -87,25 +87,25 @@ with right:
 
     profit_fig = base_chart("Expected profit per week (£)", ",.0f")
     profit_fig.add_trace(go.Scatter(x=curve["price"], y=curve["expected_profit"], mode="lines",
-                                    line=dict(color=BLUE, width=2), name="Profit",
+                                    line={"color": BLUE, "width": 2}, name="Profit",
                                     hovertemplate="£%{x:.2f}<br>Profit £%{y:,.0f}<extra></extra>"))
     profit_fig.add_trace(go.Scatter(x=[price], y=[chosen["expected_profit"]], mode="markers",
-                                    marker=dict(size=12, color=ORANGE), name="Chosen price",
+                                    marker={"size": 12, "color": ORANGE}, name="Chosen price",
                                     hovertemplate="Chosen £%{x:.2f}<br>Profit £%{y:,.0f}<extra></extra>"))
-    st.plotly_chart(style(profit_fig, 260).update_layout(margin=dict(t=30)), use_container_width=True)
+    st.plotly_chart(style(profit_fig, 260).update_layout(margin={"t": 30}), use_container_width=True)
 
     units_fig = base_chart("Expected units per week", ",.0f")
-    units_fig.add_trace(go.Scatter(x=curve["price"], y=curve["units_high"], mode="lines", line=dict(width=0),
+    units_fig.add_trace(go.Scatter(x=curve["price"], y=curve["units_high"], mode="lines", line={"width": 0},
                                    hoverinfo="skip", showlegend=False))
-    units_fig.add_trace(go.Scatter(x=curve["price"], y=curve["units_low"], mode="lines", line=dict(width=0),
+    units_fig.add_trace(go.Scatter(x=curve["price"], y=curve["units_low"], mode="lines", line={"width": 0},
                                    fill="tonexty", fillcolor="rgba(42,120,214,0.15)",
                                    name="95% CI of elasticity", hoverinfo="skip"))
     units_fig.add_trace(go.Scatter(x=curve["price"], y=curve["expected_units"], mode="lines",
-                                   line=dict(color=BLUE, width=2), name="Units",
+                                   line={"color": BLUE, "width": 2}, name="Units",
                                    hovertemplate="£%{x:.2f}<br>%{y:,.0f} units<extra></extra>"))
     units_fig.add_trace(go.Scatter(x=[price], y=[chosen["expected_units"]], mode="markers",
-                                   marker=dict(size=12, color=ORANGE), name="Chosen price",
+                                   marker={"size": 12, "color": ORANGE}, name="Chosen price",
                                    hovertemplate="Chosen £%{x:.2f}<br>%{y:,.0f} units<extra></extra>"))
-    st.plotly_chart(style(units_fig, 260).update_layout(margin=dict(t=30)), use_container_width=True)
+    st.plotly_chart(style(units_fig, 260).update_layout(margin={"t": 30}), use_container_width=True)
     st.caption("Shaded band in the background: ±20% around the current price, where the demand curve "
                "is trusted. Blue band on the units chart: range from the elasticity's 95% interval.")

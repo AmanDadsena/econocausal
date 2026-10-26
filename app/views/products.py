@@ -31,7 +31,7 @@ with left:
 
 with right:
     price = go.Figure(go.Scatter(x=sales["week_start"], y=sales["price"], mode="lines+markers",
-                                 line=dict(color=BLUE, width=2), marker=dict(size=4),
+                                 line={"color": BLUE, "width": 2}, marker={"size": 4},
                                  hovertemplate="%{x|%d %b %Y}<br>£%{y:.2f}<extra></extra>"))
     price.update_yaxes(title="Weekly median price (£)", tickprefix="£")
     st.plotly_chart(style(price, 240), use_container_width=True)
