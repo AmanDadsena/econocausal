@@ -1,12 +1,14 @@
 # EconoCausal
 
+[![CI](https://github.com/AmanDadsena/econocausal/actions/workflows/ci.yml/badge.svg)](https://github.com/AmanDadsena/econocausal/actions/workflows/ci.yml)
+
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (25 Oct 2026)
+## Status (26 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest), robustness checks, the price optimizer, its API endpoints and the full five-page dashboard done. 155 automated tests.
+(causal forest), robustness checks, the price optimizer, its API endpoints the full five-page dashboard, Docker and CI done. 155 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -51,7 +53,7 @@ recommend prices.
 | 6 | Robustness checks (placebo treatment, random common cause, data subsets) | Done |
 | 7 | Price optimizer that maximises expected profit under business constraints | Done |
 | 8 | FastAPI backend + SQLite database + Streamlit dashboard | Done |
-| 9 | Docker, CI and online deployment | Week 4 |
+| 9 | Docker, CI and online deployment | Docker and CI done; deployment next |
 
 ## Architecture
 
@@ -300,7 +302,28 @@ runs elsewhere).
 
 The selected product stays selected when switching between pages.
 
-**Tests:** `pytest`
+**Tests:** `pytest` · **Lint:** `ruff check .`
+
+### With Docker
+
+Needs `data/econocausal.db` from step 1 (it is mounted into the API container, not built into the image).
+
+```bash
+docker compose up --build
+```
+
+Dashboard: http://localhost:8501 · API docs: http://localhost:8000/docs. Each service has its own
+slim image: the API image contains no machine-learning libraries because it only serves stored results.
+
+### Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request:
+
+| Job | What it checks |
+|-----|----------------|
+| Lint | `ruff check .` (rules pinned in `pyproject.toml`) |
+| Tests | the full test suite on Python 3.12 |
+| Docker images | builds both images, starts them and calls their health endpoints |
 
 ## Progress
 
@@ -308,8 +331,8 @@ The selected product stays selected when switching between pages.
 |------|-------|--------|
 | 1 | Setup, data pipeline, EDA, synthetic data, naive baselines | Done ([notes](docs/progress/week1.md)) |
 | 2 | DML (manual + EconML), API, first dashboard | Done ([notes](docs/progress/week2.md)) |
-| 3 | Heterogeneous effects, robustness checks, price optimizer | Not started |
-| 4 | Full dashboard, Docker, CI, deployment | Not started |
+| 3 | Causal forest, robustness, optimizer, pricing API, full dashboard, Docker, CI | Done (deployment next) |
+| 4 | Deployment, evaluation, documentation, report | Not started |
 
 ## Author
 

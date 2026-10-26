@@ -40,7 +40,8 @@ OLS does not; results available through the API and dashboard.
 - [x] Price optimizer with price bounds and margin constraints
 - [x] Optimizer and simulator endpoints with tests
 - [x] Full dashboard: elasticity, segments, simulator, optimizer
-- [ ] Docker, CI, deployment
+- [x] Docker and CI (lint, tests and image builds on every push)
+- [ ] Deployment
 
 **Milestone:** working deployed app with price recommendations.
 
