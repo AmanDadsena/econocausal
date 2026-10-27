@@ -8,7 +8,7 @@ Dynamic pricing using Double Machine Learning (DML).
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest), robustness checks, the price optimizer, its API endpoints the full five-page dashboard, Docker, CI and deployment configuration done. 162 automated tests.
+(causal forest), robustness checks, the price optimizer, its API endpoints, the full five-page dashboard, Docker, CI and deployment configuration done. 162 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
