@@ -4,11 +4,11 @@
 
 Dynamic pricing using Double Machine Learning (DML).
 
-## Status (26 Oct 2026)
+## Status (27 Oct 2026)
 
 Weeks 1–2 complete: data pipeline, EDA, synthetic validation, naive baselines, own DML implementation,
 EconML comparison, REST API and first dashboard. Week 3 in progress: product-level elasticities
-(causal forest), robustness checks, the price optimizer, its API endpoints the full five-page dashboard, Docker and CI done. 155 automated tests.
+(causal forest), robustness checks, the price optimizer, its API endpoints the full five-page dashboard, Docker, CI and deployment configuration done. 162 automated tests.
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -77,7 +77,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 155 tests (pytest) |
+| `tests/` | 162 tests (pytest) |
 
 ## Data
 
@@ -314,6 +314,12 @@ docker compose up --build
 
 Dashboard: http://localhost:8501 · API docs: http://localhost:8000/docs. Each service has its own
 slim image: the API image contains no machine-learning libraries because it only serves stored results.
+
+### Deployment
+
+The API runs on Render ([`render.yaml`](render.yaml)) from a small serving database committed in
+`deploy/`, and the dashboard on Streamlit Community Cloud. Step-by-step guide:
+[docs/deployment.md](docs/deployment.md).
 
 ### Continuous integration
 
