@@ -1,0 +1,20 @@
+# Render Blueprint for the EconoCausal API.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> select this repository.
+# The API reads the small serving database committed at deploy/econocausal_serving.db
+# (regenerate it with `python -m econocausal.serving` after re-running the pipeline).
+services:
+  - type: web
+    name: econocausal-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api.txt && pip install --no-deps .
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    # Deploy a new commit only after the CI workflow (lint, tests, Docker) has passed.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ECONOCAUSAL_DB
+        value: deploy/econocausal_serving.db

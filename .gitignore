@@ -20,6 +20,8 @@ data/processed/*
 !data/processed/.gitkeep
 *.db
 *.sqlite
+# ...except the small serving database used by the deployed API
+!deploy/econocausal_serving.db
 
 # notebooks
 .ipynb_checkpoints/
