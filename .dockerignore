@@ -2,7 +2,6 @@
 *
 !pyproject.toml
 !requirements-api.txt
-!requirements-dashboard.txt
 !src/
 !api/
 !app/

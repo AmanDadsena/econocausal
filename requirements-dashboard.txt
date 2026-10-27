@@ -1,6 +1,0 @@
-# Runtime dependencies of the Streamlit dashboard only (app/). It reads everything from the API.
-streamlit>=1.40
-plotly>=5.20
-requests>=2.31
-pandas>=2.1
-numpy>=1.26

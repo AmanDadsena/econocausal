@@ -1,0 +1,8 @@
+# Runtime dependencies of the Streamlit dashboard only. It reads everything from the API.
+# Kept next to streamlit_app.py so Streamlit Community Cloud uses this file, not the
+# full requirements.txt at the repository root.
+streamlit>=1.40
+plotly>=5.20
+requests>=2.31
+pandas>=2.1
+numpy>=1.26

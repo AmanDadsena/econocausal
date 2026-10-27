@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -40,23 +41,39 @@ def _handle(response: requests.Response, path: str):
     return response.json()
 
 
+# The deployed API runs on a free plan that sleeps when idle; the first request after a
+# pause can take up to about a minute while it wakes up. Requests are therefore retried
+# on connection errors, timeouts and 502/503/504 responses for up to WAKE_UP_SECONDS.
+WAKE_UP_SECONDS = 90
+REQUEST_TIMEOUT = 30
+RETRY_STATUS = {502, 503, 504}
+
+
+def _request(method: str, path: str, **kwargs) -> requests.Response:
+    deadline = time.monotonic() + WAKE_UP_SECONDS
+    while True:
+        try:
+            response = requests.request(method, f"{API_URL}{path}", timeout=REQUEST_TIMEOUT, **kwargs)
+            if response.status_code not in RETRY_STATUS or time.monotonic() > deadline:
+                return response
+        except requests.RequestException as exc:
+            if time.monotonic() > deadline:
+                raise ApiError(
+                    f"Cannot reach the API at {API_URL}. If it runs locally, start it with "
+                    "`uvicorn api.main:app`; if it is hosted, try again in a minute."
+                ) from exc
+        time.sleep(3)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def api_get(path: str, **params):
-    try:
-        response = requests.get(f"{API_URL}{path}", params=params or None, timeout=15)
-    except requests.RequestException as exc:
-        raise ApiError(f"Cannot reach the API at {API_URL}. Start it with `uvicorn api.main:app`.") from exc
-    return _handle(response, path)
+    return _handle(_request("GET", path, params=params or None), path)
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def _api_post_cached(path: str, body_json: str):
-    try:
-        response = requests.post(f"{API_URL}{path}", data=body_json,
-                                 headers={"Content-Type": "application/json"}, timeout=15)
-    except requests.RequestException as exc:
-        raise ApiError(f"Cannot reach the API at {API_URL}. Start it with `uvicorn api.main:app`.") from exc
-    return _handle(response, path)
+    return _handle(_request("POST", path, data=body_json,
+                            headers={"Content-Type": "application/json"}), path)
 
 
 def api_post(path: str, body: dict):
@@ -67,7 +84,9 @@ def api_post(path: str, body: dict):
 def call_or_stop(func, *args, **kwargs):
     """Run an API call; on failure show the error and stop the page."""
     try:
-        return func(*args, **kwargs)
+        with st.spinner("Loading data from the API (the first visit can take up to a minute "
+                        "while the hosted API wakes up)..."):
+            return func(*args, **kwargs)
     except ApiError as exc:
         st.error(str(exc))
         st.stop()

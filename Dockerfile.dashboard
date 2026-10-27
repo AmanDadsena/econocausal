@@ -16,7 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements-dashboard.txt .
+COPY app/requirements.txt requirements-dashboard.txt
 RUN pip install -r requirements-dashboard.txt
 
 COPY app ./app

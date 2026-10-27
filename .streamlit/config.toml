@@ -1,0 +1,6 @@
+# Streamlit settings, used locally and on Streamlit Community Cloud.
+[theme]
+primaryColor = "#2a78d6"
+
+[browser]
+gatherUsageStats = false
