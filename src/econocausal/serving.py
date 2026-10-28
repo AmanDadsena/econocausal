@@ -19,6 +19,12 @@ from econocausal.paths import PROJECT_ROOT
 
 SERVING_DB_PATH = PROJECT_ROOT / "deploy" / "econocausal_serving.db"
 
+# Bookkeeping columns the API never reads; left out so the file only changes when results do.
+DROP_COLUMNS = {"created_at"}
+# Floats are rounded so that differences in the last binary digits (from multi-threaded
+# model fitting) do not change the file between otherwise identical runs.
+FLOAT_DECIMALS = 10
+
 # Table -> columns the API reads (None = all columns).
 SERVING_TABLES: dict[str, list[str] | None] = {
     "products": None,
@@ -27,6 +33,17 @@ SERVING_TABLES: dict[str, list[str] | None] = {
     "segment_elasticity": None,
     "product_elasticity": None,
     "price_recommendations": None,
+}
+
+# Rows are written in a fixed order, so the file does not depend on the order in which the
+# pipeline happened to save results (re-saving a result moves its rows to the end).
+ORDER_BY = {
+    "products": ["stock_code"],
+    "weekly_sales": ["stock_code", "week_start"],
+    "results": ["dataset", "method"],
+    "segment_elasticity": ["dataset", "method", "segment", "value"],
+    "product_elasticity": ["dataset", "method", "stock_code"],
+    "price_recommendations": ["stock_code"],
 }
 
 INDEXES = [
@@ -57,9 +74,18 @@ def export_serving_db(source: Path = DB_PATH, target: Path = SERVING_DB_PATH) ->
             if missing:
                 raise ValueError(f"Source database is missing tables {missing}. Run the full pipeline first.")
             for table, columns in SERVING_TABLES.items():
-                # Table and column names come from the fixed SERVING_TABLES mapping, never from input.
-                cols = ", ".join(f'"{c}"' for c in columns) if columns else "*"
-                out.execute(f'CREATE TABLE "{table}" AS SELECT {cols} FROM src."{table}"')
+                # Table and column names come from the fixed SERVING_TABLES mapping and the
+                # source schema, never from user input.
+                types = {row[1]: (row[2] or "").upper()
+                         for row in out.execute(f'PRAGMA src.table_info("{table}")')}
+                names = [c for c in (columns or types) if c not in DROP_COLUMNS]
+                cols = ", ".join(
+                    f'ROUND("{c}", {FLOAT_DECIMALS}) AS "{c}"' if types[c] in {"FLOAT", "REAL", "DOUBLE"}
+                    else f'"{c}"'
+                    for c in names
+                )
+                order = ", ".join(f'"{c}"' for c in ORDER_BY[table])
+                out.execute(f'CREATE TABLE "{table}" AS SELECT {cols} FROM src."{table}" ORDER BY {order}')
                 counts[table] = out.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
             for statement in INDEXES:
                 out.execute(statement)

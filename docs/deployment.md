@@ -11,10 +11,14 @@ Two free services, both deployed straight from this GitHub repository:
 
 The full database is built by the pipeline and is not stored in git. The API only needs a few tables,
 so `python -m econocausal.serving` copies them into
-[`deploy/econocausal_serving.db`](../deploy/econocausal_serving.db) (14.3 MB), which is committed.
+[`deploy/econocausal_serving.db`](../deploy/econocausal_serving.db) (14.9 MB), which is committed.
 Render runs the API on that file, so the deployed API needs neither the raw data download nor the
-machine-learning libraries. A test checks that every endpoint gives identical answers on the serving
-database and the full one.
+machine-learning libraries. A test checks that every endpoint gives the same answers on the serving
+database as on the full one.
+
+The export is deterministic: it leaves out bookkeeping timestamps, sorts every table by its key and
+rounds floats to 10 decimals, so re-running the pipeline produces a byte-identical file unless a result
+actually changed. (Rounding changes answers by less than 1 part in 100 million.)
 
 After re-running the pipeline, refresh it with:
 
