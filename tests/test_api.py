@@ -130,3 +130,9 @@ def test_elasticity_products_list(client):
     assert (item["stock_code"], item["estimate"], item["category"]) == ("85123A", -1.62, "candles_lighting")
     assert client.get("/elasticity/products", params={"category": "bags"}).json()["total"] == 0
     assert client.get("/elasticity/products", params={"sort": "bad; DROP"}).status_code == 422
+
+
+def test_api_reports_the_package_version(client):
+    import econocausal
+
+    assert client.get("/openapi.json").json()["info"]["version"] == econocausal.__version__

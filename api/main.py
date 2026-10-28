@@ -22,6 +22,7 @@ import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import Engine, inspect, text
 
+import econocausal
 from api.schemas import (
     Category,
     Estimate,
@@ -44,7 +45,7 @@ from econocausal.optimize import PricingRules, demand, pricing_inputs, recommend
 app = FastAPI(
     title="EconoCausal API",
     description="Price elasticities estimated with Double Machine Learning on the Online Retail II data.",
-    version="0.1.0",
+    version=econocausal.__version__,
 )
 
 
