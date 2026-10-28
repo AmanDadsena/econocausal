@@ -245,12 +245,24 @@ pip install -e .
 **1. Build the data and the results** (once; the download is about 46 MB):
 
 ```bash
-python -m econocausal.data.download   # download Online Retail II
-python -m econocausal.data.load       # Excel -> parquet
-python -m econocausal.data.build      # clean, weekly panel, SQLite
-python -m econocausal.baselines       # naive OLS baselines
-python -m econocausal.run_dml         # DML estimates (about 3 minutes)
+python -m econocausal.pipeline
 ```
+
+This runs every step in order and prints how long each took (about 11 minutes on a laptop):
+
+| Step | Module | Output |
+|------|--------|--------|
+| download | `econocausal.data.download` | raw Excel file (skipped if present) |
+| load | `econocausal.data.load` | parquet file (skipped if present) |
+| build | `econocausal.data.build` | cleaned weekly panel in SQLite |
+| baselines | `econocausal.baselines` | naive OLS results |
+| dml | `econocausal.run_dml` | DML on synthetic and real data, per category and per product |
+| robustness | `econocausal.robustness` | refutation checks |
+| optimize | `econocausal.optimize` | price recommendations |
+| serving | `econocausal.serving` | small database for the deployed API |
+
+Run part of it with `--from STEP` or `--only STEP ...`. All model steps use fixed random seeds: a
+full rebuild from the raw data reproduces every committed result file exactly.
 
 **2. Start the API** (terminal 1):
 
