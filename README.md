@@ -351,7 +351,7 @@ The API runs on Render ([`render.yaml`](render.yaml)) from a small serving datab
 |------|-------|--------|
 | 1 | Setup, data pipeline, EDA, synthetic data, naive baselines | Done ([notes](docs/progress/week1.md)) |
 | 2 | DML (manual + EconML), API, first dashboard | Done ([notes](docs/progress/week2.md)) |
-| 3 | Causal forest, robustness, optimizer, pricing API, full dashboard, Docker, CI | Done (deployment next) |
+| 3 | Causal forest, robustness, optimizer, pricing API, full dashboard, Docker, CI, release 1.0.0 | Done ([notes](docs/progress/week3.md)); live deployment pending |
 | 4 | Deployment, evaluation, documentation, report | Not started |
 
 ## Author
