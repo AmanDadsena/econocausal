@@ -13,13 +13,16 @@ Interactive docs: http://localhost:8000/docs
 The database location can be changed with the ECONOCAUSAL_DB environment variable.
 """
 
+import logging
 import os
+import time
+import uuid
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from sqlalchemy import Engine, inspect, text
 
 import econocausal
@@ -40,6 +43,7 @@ from api.schemas import (
     WeeklySales,
 )
 from econocausal.data.db import DB_PATH, get_engine
+from econocausal.log import setup_logging
 from econocausal.optimize import PricingRules, demand, pricing_inputs, recommend_price
 
 app = FastAPI(
@@ -47,6 +51,24 @@ app = FastAPI(
     description="Price elasticities estimated with Double Machine Learning on the Online Retail II data.",
     version=econocausal.__version__,
 )
+
+setup_logging()
+logger = logging.getLogger("econocausal.api")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """One log line per request: method, path, status and duration. A request ID is
+    returned in the X-Request-ID header so a user's report can be matched to the log.
+    Query strings and request bodies are not logged."""
+    request_id = uuid.uuid4().hex[:12]
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    response.headers["X-Request-ID"] = request_id
+    logger.info("%s %s -> %d in %.0f ms [%s]", request.method, request.url.path,
+                response.status_code, elapsed_ms, request_id)
+    return response
 
 
 @lru_cache

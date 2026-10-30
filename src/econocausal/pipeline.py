@@ -21,8 +21,13 @@ All model steps use fixed random seeds, so a re-run reproduces the same results.
 """
 
 import argparse
+import logging
 import time
 from collections.abc import Callable
+
+from econocausal.log import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def _download(force: bool) -> None:
@@ -81,9 +86,15 @@ def run(steps: list[str], force_download: bool = False) -> dict[str, float]:
     timings = {}
     for i, name in enumerate(steps, start=1):
         print(f"\n=== [{i}/{len(steps)}] {name} ===")
+        logger.info("step %d/%d '%s' started", i, len(steps), name)
         start = time.time()
-        STEPS[name](force_download)
+        try:
+            STEPS[name](force_download)
+        except Exception:
+            logger.exception("step '%s' failed after %.0fs", name, time.time() - start)
+            raise
         timings[name] = time.time() - start
+        logger.info("step '%s' finished in %.0fs", name, timings[name])
     return timings
 
 
@@ -95,6 +106,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--force-download", action="store_true",
                         help="download and convert the raw data again even if it exists")
     args = parser.parse_args(argv)
+    setup_logging()
 
     steps = select_steps(args.only, args.start)
     total = time.time()
