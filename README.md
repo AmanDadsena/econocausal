@@ -10,7 +10,7 @@ Weeks 1–3 complete: data pipeline, EDA, synthetic validation, naive baselines,
 EconML comparison, product-level elasticities (causal forest), robustness checks, price optimizer,
 REST API, five-page dashboard, Docker, CI and deployment configuration. The whole analysis rebuilds
 from the raw data with one command (`python -m econocausal.pipeline`) and reproduces every committed
-result exactly. 172 automated tests.
+result exactly. 200 automated tests (84% line coverage).
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -79,7 +79,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 172 tests (pytest) |
+| `tests/` | 200 tests (pytest, 84% coverage) |
 
 ## Data
 
@@ -342,7 +342,7 @@ The API runs on Render ([`render.yaml`](render.yaml)) from a small serving datab
 | Job | What it checks |
 |-----|----------------|
 | Lint | `ruff check .` (rules pinned in `pyproject.toml`) |
-| Tests | the full test suite on Python 3.12 |
+| Tests | the full test suite on Python 3.12, with a coverage report |
 | Docker images | builds both images, starts them and calls their health endpoints |
 
 ## Progress

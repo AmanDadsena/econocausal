@@ -30,3 +30,10 @@ ignore = ["E501"]
 known-first-party = ["econocausal", "api"]
 # Modules imported by plain name from their own folder: app/common.py and tests/test_dml.py.
 known-local-folder = ["common", "test_dml"]
+
+[tool.coverage.run]
+source = ["src/econocausal", "api"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

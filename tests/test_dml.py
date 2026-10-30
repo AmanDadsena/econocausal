@@ -117,3 +117,19 @@ def test_works_on_unbalanced_panel(synthetic):
     keep = np.random.default_rng(0).random(len(synthetic)) > 0.3
     result = fit(synthetic[keep])
     assert result.estimate == pytest.approx(TRUE_ELASTICITY, abs=0.15)
+
+
+def test_product_fixed_effects_are_needed(synthetic):
+    """Without removing each product's average, differences between products (popular
+    products are the cheap ones) bias the estimate badly. Over seeds 1-3 this gave about
+    -0.9 without fixed effects and -1.8 with them."""
+    without = fit(synthetic, product_fixed_effects=False)
+    assert abs(without.estimate - TRUE_ELASTICITY) > 0.5
+    assert not (without.ci_low < TRUE_ELASTICITY < without.ci_high)
+
+
+def test_result_to_dict(dml_result):
+    d = dml_result.to_dict()
+    assert set(d) == {"estimate", "std_error", "ci_low", "ci_high", "n_obs", "n_groups",
+                      "outcome_r2", "treatment_r2"}
+    assert d["estimate"] == dml_result.estimate

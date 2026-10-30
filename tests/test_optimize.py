@@ -62,6 +62,8 @@ def test_rules_validate_their_inputs():
         PricingRules(min_margin=1.2)
     with pytest.raises(ValueError):
         PricingRules(objective="sales")
+    with pytest.raises(ValueError):
+        PricingRules(cost_ratio=1.0)
 
 
 @pytest.mark.parametrize("elasticity", [-0.6, -1.1, -1.3, -2.0, -2.5, -4.0, -8.0])

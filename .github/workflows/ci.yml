@@ -42,8 +42,8 @@ jobs:
           pip install -e .
       # The tests use synthetic data and small temporary databases, so the
       # Online Retail II download is not needed here.
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests with coverage
+        run: pytest -q --cov --cov-report=term
 
   docker:
     name: Docker images
