@@ -23,14 +23,21 @@ def download_file(url: str, dest: Path) -> Path:
     download never leaves a half-written file behind."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
-    with urllib.request.urlopen(url, timeout=60) as response, open(tmp, "wb") as f:
-        shutil.copyfileobj(response, f)
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response, open(tmp, "wb") as f:
+            shutil.copyfileobj(response, f)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
     tmp.replace(dest)
     return dest
 
 
 def extract_excel(zip_path: Path, out_dir: Path) -> Path:
-    """Extract the Excel file from the downloaded zip and return its path."""
+    """Extract the Excel file from the downloaded zip and return its path.
+
+    The file is written under a temporary name and renamed only when complete; a
+    half-extracted file would otherwise be mistaken for a finished download next time."""
     if not zipfile.is_zipfile(zip_path):
         raise ValueError(f"{zip_path} is not a valid zip file, try --force to download again")
 
@@ -40,8 +47,14 @@ def extract_excel(zip_path: Path, out_dir: Path) -> Path:
             raise ValueError(f"No .xlsx file found in {zip_path}")
         member = excel_files[0]
         target = out_dir / EXCEL_NAME
-        with zf.open(member) as src, open(target, "wb") as dst:
-            shutil.copyfileobj(src, dst)
+        tmp = target.with_suffix(target.suffix + ".part")
+        try:
+            with zf.open(member) as src, open(tmp, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+        tmp.replace(target)
     return target
 
 
