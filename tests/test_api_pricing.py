@@ -149,3 +149,24 @@ def test_recommendations_filters_and_sorting(client):
 
 def test_recommendations_reject_unknown_sort(client):
     assert client.get("/recommendations", params={"sort": "price; DROP TABLE x"}).status_code == 422
+
+
+@pytest.mark.parametrize("price", [P0 * 0.19, P0 * 5.01])
+def test_simulate_rejects_prices_far_from_the_current_price(client, price):
+    r = client.post("/simulate", json={"stock_code": "22386", "prices": [P0, price]})
+    assert r.status_code == 422
+    assert "only meaningful near prices" in r.json()["detail"]
+
+
+def test_simulate_accepts_the_edges_of_the_allowed_range(client):
+    r = client.post("/simulate", json={"stock_code": "22386", "prices": [P0 * 0.2, P0 * 5.0]})
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize("raw", ['{"stock_code": "22386", "prices": [NaN]}',
+                                 '{"stock_code": "22386", "prices": [Infinity]}',
+                                 '{"stock_code": "22386", "cost_ratio": NaN}'])
+def test_nan_and_infinity_are_rejected(client, raw):
+    path = "/simulate" if "prices" in raw else "/optimal-price"
+    r = client.post(path, content=raw, headers={"Content-Type": "application/json"})
+    assert r.status_code == 422

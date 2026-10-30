@@ -345,6 +345,11 @@ def product_elasticity(stock_code: str, db: EngineDep) -> dict:
 # --- pricing -----------------------------------------------------------------------
 
 PRICING_WINDOW_WEEKS = 13
+# The constant-elasticity demand curve is a local approximation; far from observed prices
+# its numbers are meaningless, so simulated prices must stay within this range of the
+# current price.
+SIMULATE_MIN_RATIO = 0.2
+SIMULATE_MAX_RATIO = 5.0
 
 
 def pricing_basis(db: Engine, stock_code: str, cost_ratio: float) -> dict:
@@ -408,9 +413,20 @@ def optimal_price(request: OptimalPriceRequest, db: EngineDep) -> dict:
 def simulate(request: SimulateRequest, db: EngineDep) -> dict:
     """Expected weekly units, revenue and profit at each candidate price.
 
+    Prices must lie between 20% and 500% of the product's current price.
+
     `units_low` / `units_high` use the two ends of the elasticity's 95% interval."""
     basis = pricing_basis(db, request.stock_code, request.cost_ratio)
     p0, q0, cost = basis["current_price"], basis["current_units"], basis["unit_cost"]
+    low, high = p0 * SIMULATE_MIN_RATIO, p0 * SIMULATE_MAX_RATIO
+    outside = [p for p in request.prices if not low <= p <= high]
+    if outside:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Prices must be between £{low:.2f} and £{high:.2f} ({SIMULATE_MIN_RATIO:.0%}–"
+                   f"{SIMULATE_MAX_RATIO:.0%} of the current price £{p0:.2f}); the demand model is only "
+                   f"meaningful near prices the product has been sold at. Out of range: {outside}",
+        )
     results = []
     for price in request.prices:
         units = float(demand(price, p0, q0, basis["elasticity"]))

@@ -89,7 +89,8 @@ class ProductElasticity(BaseModel):
 
 StockCode = Annotated[str, Field(min_length=1, max_length=20, pattern=r"^[A-Za-z0-9]+$",
                                  examples=["22386"])]
-Price = Annotated[float, Field(gt=0, le=10_000)]
+# allow_inf_nan=False: Python's JSON parser accepts NaN and Infinity, which must be rejected.
+Price = Annotated[float, Field(gt=0, le=10_000, allow_inf_nan=False)]
 
 
 class PricingSettings(BaseModel):
@@ -97,9 +98,9 @@ class PricingSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    max_change: float = Field(0.20, gt=0, le=0.5, description="Largest allowed price move, e.g. 0.2 = ±20%")
-    min_margin: float = Field(0.20, ge=0, le=0.9, description="Smallest allowed (price − cost) / price")
-    cost_ratio: float = Field(0.60, ge=0, le=0.95, description="Assumed unit cost as a share of the current price")
+    max_change: float = Field(0.20, gt=0, le=0.5, allow_inf_nan=False, description="Largest allowed price move, e.g. 0.2 = ±20%")
+    min_margin: float = Field(0.20, ge=0, le=0.9, allow_inf_nan=False, description="Smallest allowed (price − cost) / price")
+    cost_ratio: float = Field(0.60, ge=0, le=0.95, allow_inf_nan=False, description="Assumed unit cost as a share of the current price")
     objective: Literal["profit", "revenue"] = "profit"
 
 
@@ -113,7 +114,7 @@ class SimulateRequest(BaseModel):
     stock_code: StockCode
     prices: list[Price] = Field(min_length=1, max_length=50, description="Candidate prices in GBP",
                                 examples=[[1.80, 2.10, 2.40]])
-    cost_ratio: float = Field(0.60, ge=0, le=0.95, description="Assumed unit cost as a share of the current price")
+    cost_ratio: float = Field(0.60, ge=0, le=0.95, allow_inf_nan=False, description="Assumed unit cost as a share of the current price")
 
 
 class PricingBasis(BaseModel):

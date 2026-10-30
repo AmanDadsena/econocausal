@@ -122,6 +122,10 @@ def recommend_price(
     are optional; when given, the recommended price is also computed at both ends to show
     how sensitive the decision is to estimation uncertainty.
     """
+    values = {"base_price": base_price, "base_quantity": base_quantity, "elasticity": elasticity}
+    not_finite = [name for name, v in values.items() if not np.isfinite(v)]
+    if not_finite:
+        raise ValueError(f"{', '.join(not_finite)} must be finite numbers")
     if base_price <= 0 or base_quantity < 0:
         raise ValueError("base_price must be positive and base_quantity non-negative")
 

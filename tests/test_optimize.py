@@ -172,3 +172,12 @@ def test_optimize_products_and_summary():
     assert summary["products_priced"] == 2
     assert summary["price_up"] == 1 and summary["price_down"] == 1
     assert summary["expected_weekly_profit"] > summary["current_weekly_profit"]
+
+
+@pytest.mark.parametrize("bad", [
+    {"base_price": float("nan")}, {"base_quantity": float("inf")}, {"elasticity": float("nan")},
+])
+def test_non_finite_inputs_are_rejected(bad):
+    args = {"base_price": 2.0, "base_quantity": 10.0, "elasticity": -1.5, **bad}
+    with pytest.raises(ValueError, match="must be finite"):
+        recommend_price(**args)
