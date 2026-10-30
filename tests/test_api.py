@@ -136,3 +136,40 @@ def test_api_reports_the_package_version(client):
     import econocausal
 
     assert client.get("/openapi.json").json()["info"]["version"] == econocausal.__version__
+
+
+def test_validation_errors_are_readable(client):
+    r = client.get("/products", params={"limit": 0})
+    body = r.json()
+    assert r.status_code == 422
+    assert body["detail"].startswith("Invalid request. limit:")
+    assert body["errors"][0]["field"] == "limit"
+
+
+def test_not_found_explains_how_to_find_products(client):
+    detail = client.get("/products/NOPE").json()["detail"]
+    assert "not found" in detail and "/products?search=" in detail and "30 weeks" in detail
+
+
+def test_unexpected_errors_hide_internal_details(api_db, monkeypatch, caplog):
+    import logging
+
+    from fastapi.testclient import TestClient
+
+    import api.main as main
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("secret internal detail: SELECT * FROM products")
+
+    main.engine.cache_clear()
+    monkeypatch.setattr(main, "query", broken)
+    with caplog.at_level(logging.ERROR, logger="econocausal.api"):
+        r = TestClient(main.app, raise_server_exceptions=False).get("/categories")
+    main.engine.cache_clear()
+
+    body = r.json()
+    assert r.status_code == 500
+    assert "secret" not in r.text and "SELECT" not in r.text
+    assert body["request_id"] in body["detail"]
+    assert r.headers["X-Request-ID"] == body["request_id"]
+    assert any(body["request_id"] in rec.getMessage() for rec in caplog.records)

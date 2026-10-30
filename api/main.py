@@ -23,6 +23,8 @@ from typing import Annotated
 
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy import Engine, inspect, text
 
 import econocausal
@@ -62,6 +64,7 @@ async def log_requests(request: Request, call_next):
     returned in the X-Request-ID header so a user's report can be matched to the log.
     Query strings and request bodies are not logged."""
     request_id = uuid.uuid4().hex[:12]
+    request.state.request_id = request_id
     start = time.perf_counter()
     response = await call_next(request)
     elapsed_ms = (time.perf_counter() - start) * 1000
@@ -71,12 +74,49 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+def _field(loc: tuple) -> str:
+    """('body', 'prices', 0) -> 'prices.0'; ('query', 'limit') -> 'limit'."""
+    parts = [str(p) for p in loc if p not in ("body", "query", "path")]
+    return ".".join(parts) or "request"
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 with one readable sentence per problem, plus the structured list for programs."""
+    problems = [f"{_field(e['loc'])}: {e['msg']}" for e in exc.errors()]
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Invalid request. " + "; ".join(problems),
+            "errors": [{"field": _field(e["loc"]), "message": e["msg"]} for e in exc.errors()],
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+    """500 without internal details; the full traceback goes to the log under the request ID."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.exception("unhandled error on %s %s [%s]", request.method, request.url.path, request_id)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal error. Please report request ID {request_id}.",
+                 "request_id": request_id},
+        headers={"X-Request-ID": request_id},
+    )
+
+
 @lru_cache
 def engine() -> Engine:
     return get_engine(Path(os.environ.get("ECONOCAUSAL_DB", DB_PATH)))
 
 
 EngineDep = Annotated[Engine, Depends(engine)]
+
+NOT_FOUND_HINT = (
+    "Use GET /products?search=... to find stock codes. Only products with at least "
+    "30 weeks of sales and 5 different prices are included."
+)
 
 
 def query(db: Engine, sql: str, **params) -> pd.DataFrame:
@@ -151,7 +191,7 @@ def product(stock_code: str, db: EngineDep) -> dict:
     require_tables(db, "products")
     df = query(db, "SELECT * FROM products WHERE stock_code = :code", code=stock_code.upper())
     if df.empty:
-        raise HTTPException(status_code=404, detail=f"Product '{stock_code}' not found")
+        raise HTTPException(status_code=404, detail=f"Product '{stock_code}' not found. {NOT_FOUND_HINT}")
     return records(df)[0]
 
 
@@ -168,7 +208,7 @@ def product_sales(stock_code: str, db: EngineDep) -> list[dict]:
         code=stock_code.upper(),
     )
     if df.empty:
-        raise HTTPException(status_code=404, detail=f"Product '{stock_code}' not found")
+        raise HTTPException(status_code=404, detail=f"Product '{stock_code}' not found. {NOT_FOUND_HINT}")
     df["week_start"] = pd.to_datetime(df["week_start"]).dt.strftime("%Y-%m-%d")
     return records(df)
 
