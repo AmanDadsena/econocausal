@@ -101,6 +101,7 @@ def export_serving_db(source: Path = DB_PATH, target: Path = SERVING_DB_PATH) ->
 
 
 def main() -> None:
+    """Export the serving database and print the rows copied per table and the file size."""
     counts = export_serving_db()
     size_mb = SERVING_DB_PATH.stat().st_size / 1e6
     for table, n in counts.items():

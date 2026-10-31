@@ -31,6 +31,8 @@ def effect_modifiers(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def default_forest(seed: int = 0) -> CausalForest:
+    """Causal forest used on the real data: 400 honest trees, at least 50 rows per leaf
+    (stable estimates for products with about 100 weeks), confidence intervals enabled."""
     return CausalForest(
         n_estimators=400,
         min_samples_leaf=50,

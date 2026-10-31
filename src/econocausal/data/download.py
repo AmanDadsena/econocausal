@@ -78,6 +78,7 @@ def download_dataset(force: bool = False) -> Path:
 
 
 def main() -> None:
+    """Command-line entry point: download the dataset (use --force to download again)."""
     parser = argparse.ArgumentParser(description="Download the Online Retail II dataset.")
     parser.add_argument("--force", action="store_true", help="download even if the file exists")
     args = parser.parse_args()

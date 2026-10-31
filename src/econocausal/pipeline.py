@@ -99,6 +99,8 @@ def run(steps: list[str], force_download: bool = False) -> dict[str, float]:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Command-line entry point: parse --only / --from / --force-download, run the
+    selected steps and print how long each took."""
     parser = argparse.ArgumentParser(description="Run the EconoCausal pipeline.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--only", nargs="+", metavar="STEP", help=f"run only these steps: {', '.join(STEPS)}")

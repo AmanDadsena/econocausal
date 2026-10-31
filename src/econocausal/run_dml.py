@@ -36,6 +36,7 @@ REPORTS = PROJECT_ROOT / "reports"
 
 
 def timed(label: str, func, *args, **kwargs):
+    """Call `func(*args, **kwargs)`, print how long it took under `label`, return its result."""
     start = time.time()
     out = func(*args, **kwargs)
     print(f"{label:<28} done in {time.time() - start:.0f}s")
@@ -61,6 +62,8 @@ def run_synthetic(engine) -> pd.DataFrame:
 
 
 def main() -> None:
+    """Synthetic check, then on the real panel: shared residuals, average elasticity (own
+    DML and EconML), per category and per product; results saved to the database and reports/."""
     warnings.filterwarnings("ignore", category=UserWarning)
     engine = get_engine()
     run_synthetic(engine)

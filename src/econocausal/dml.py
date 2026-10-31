@@ -77,6 +77,13 @@ def default_model(seed: int = 0) -> LGBMRegressor:
 
 @dataclass
 class DMLResult:
+    """One elasticity estimate with its uncertainty and how well the nuisance models fit.
+
+    estimate, std_error, ci_low, ci_high : θ̂, its standard error and 95% interval
+    n_obs, n_groups                      : rows and products used
+    outcome_r2, treatment_r2             : out-of-fold R² of the quantity and price models
+    """
+
     estimate: float
     std_error: float
     ci_low: float
@@ -87,6 +94,7 @@ class DMLResult:
     treatment_r2: float
 
     def to_dict(self) -> dict:
+        """The fields as a plain dict (e.g. for a DataFrame row or a JSON response)."""
         return asdict(self)
 
 

@@ -70,6 +70,7 @@ class PricingRules:
     objective: str = "profit"
 
     def __post_init__(self):
+        """Reject rules outside their valid ranges as soon as they are created."""
         if not 0 < self.max_change < 1:
             raise ValueError("max_change must be between 0 and 1")
         if not 0 <= self.min_margin < 1:

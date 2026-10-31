@@ -96,6 +96,8 @@ def run_all(df: pd.DataFrame, original: DMLResult | None = None, seed: int = 0, 
 
 
 def main() -> None:
+    """Run every check on the real panel; save to the `robustness` table and
+    reports/robustness_real.csv."""
     import time
     import warnings
 

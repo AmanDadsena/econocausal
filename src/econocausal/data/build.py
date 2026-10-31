@@ -11,6 +11,8 @@ from econocausal.data.panel import build_panel
 
 
 def main() -> None:
+    """Raw transactions -> cleaning -> weekly panel -> SQLite, printing the row counts
+    and the cleaning log along the way."""
     raw = load_raw()
     print(f"Raw transactions:   {len(raw):>9,}")
 

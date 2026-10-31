@@ -101,6 +101,8 @@ def run_baselines(df: pd.DataFrame, dataset: str, true_value: float | None = Non
 
 
 def main() -> None:
+    """Fit every baseline on the synthetic and the real panel; save to the `results`
+    table and reports/baseline_results.csv."""
     from econocausal.data.db import get_engine, load_panel, save_results
     from econocausal.paths import PROJECT_ROOT
     from econocausal.simulate import simulate_panel
