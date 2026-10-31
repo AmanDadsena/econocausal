@@ -28,7 +28,7 @@ METHOD_LABELS = {
 
 
 class ApiError(Exception):
-    pass
+    """The API could not be reached or returned an error; the message is shown to the user."""
 
 
 def _handle(response: requests.Response, path: str):
@@ -67,6 +67,7 @@ def _request(method: str, path: str, **kwargs) -> requests.Response:
 
 @st.cache_data(ttl=300, show_spinner=False)
 def api_get(path: str, **params):
+    """GET `path` with query `params`; cached for five minutes."""
     return _handle(_request("GET", path, params=params or None), path)
 
 
@@ -93,6 +94,7 @@ def call_or_stop(func, *args, **kwargs):
 
 
 def style(fig: go.Figure, height: int, legend: bool = False) -> go.Figure:
+    """Shared look for every chart: transparent background, quiet grid, fixed height."""
     fig.update_layout(
         height=height,
         margin={"l": 10, "r": 10, "t": 10, "b": 10},
@@ -170,8 +172,10 @@ def product_picker(categories: list[str]) -> str | None:
 
 
 def categories_list() -> list[str]:
+    """All product category names, for the category filters."""
     return [c["category"] for c in call_or_stop(api_get, "/categories")]
 
 
 def money(value: float, decimals: int = 2) -> str:
+    """Format an amount in pounds, e.g. 1234.5 -> £1,234.50."""
     return f"£{value:,.{decimals}f}"

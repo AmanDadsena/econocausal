@@ -108,6 +108,7 @@ async def unexpected_error(request: Request, exc: Exception) -> JSONResponse:
 
 @lru_cache
 def engine() -> Engine:
+    """Database engine for ECONOCAUSAL_DB (default data/econocausal.db), created once."""
     return get_engine(Path(os.environ.get("ECONOCAUSAL_DB", DB_PATH)))
 
 
@@ -132,6 +133,7 @@ def records(df: pd.DataFrame) -> list[dict]:
 
 
 def require_tables(db: Engine, *tables: str) -> None:
+    """Raise 503 with a clear message if any of `tables` is missing (pipeline not run yet)."""
     missing = [t for t in tables if not inspect(db).has_table(t)]
     if missing:
         raise HTTPException(

@@ -74,6 +74,7 @@ with right:
                f"profit per week. Margin at the chosen price: {chosen['margin_pct']:.0f}%.")
 
     def base_chart(title, fmt):
+        """Empty price chart with the trusted ±20% band and a line at the current price."""
         fig = go.Figure()
         fig.add_vrect(x0=p0 * (1 - TRUSTED_CHANGE), x1=p0 * (1 + TRUSTED_CHANGE),
                       fillcolor="rgba(128,128,128,0.08)", line_width=0)

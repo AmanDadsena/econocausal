@@ -71,6 +71,7 @@ st.caption("Stored results from `python -m econocausal.optimize` with the defaul
 
 @st.cache_data(ttl=300, show_spinner=False)
 def all_recommendations() -> pd.DataFrame:
+    """Every stored recommendation, fetched 500 at a time (the API page limit)."""
     items, offset = [], 0
     while True:
         page = api_get("/recommendations", sort="profit_gain", limit=500, offset=offset)

@@ -11,17 +11,23 @@ from pydantic import BaseModel, ConfigDict, Field
 # --- products and elasticities -----------------------------------------------------
 
 class Health(BaseModel):
+    """Service status and the database tables the API can see."""
+
     status: str
     tables: list[str]
 
 
 class Category(BaseModel):
+    """A product category with its number of products and total revenue (GBP)."""
+
     category: str
     n_products: int
     total_revenue: float
 
 
 class Product(BaseModel):
+    """Summary of one product in the modelling panel (prices in GBP, totals over 2009-2011)."""
+
     stock_code: str
     description: str | None
     category: str
@@ -35,6 +41,8 @@ class Product(BaseModel):
 
 
 class ProductList(BaseModel):
+    """One page of products plus the total number matching the filters."""
+
     total: int
     limit: int
     offset: int
@@ -42,6 +50,8 @@ class ProductList(BaseModel):
 
 
 class WeeklySales(BaseModel):
+    """One week of a product: median price, units sold, revenue and guest share."""
+
     week_start: str
     price: float
     quantity: int
@@ -50,6 +60,8 @@ class WeeklySales(BaseModel):
 
 
 class Estimate(BaseModel):
+    """An average price elasticity from one method on one dataset. `true_value` is set only for synthetic data."""
+
     dataset: str
     method: str
     estimate: float
@@ -63,6 +75,8 @@ class Estimate(BaseModel):
 
 
 class SegmentEstimate(BaseModel):
+    """Price elasticity for one segment (e.g. one product category) with its 95% interval."""
+
     segment: str
     value: str
     estimate: float
@@ -74,6 +88,8 @@ class SegmentEstimate(BaseModel):
 
 
 class ProductElasticity(BaseModel):
+    """Elasticity for one product: product level (causal forest) when available, else its category."""
+
     stock_code: str
     description: str | None
     category: str
@@ -105,10 +121,14 @@ class PricingSettings(BaseModel):
 
 
 class OptimalPriceRequest(PricingSettings):
+    """Ask for the best price for one product under the given business rules."""
+
     stock_code: StockCode
 
 
 class SimulateRequest(BaseModel):
+    """Candidate prices (1 to 50, each 20%-500% of the current price) to evaluate for one product."""
+
     model_config = ConfigDict(extra="forbid")
 
     stock_code: StockCode
@@ -134,6 +154,8 @@ class PricingBasis(BaseModel):
 
 
 class OptimalPriceResponse(PricingBasis):
+    """Recommended price, the rule that decided it, and expected units, revenue and profit."""
+
     recommended_price: float | None
     reason: str
     price_change_pct: float | None = None
@@ -150,6 +172,8 @@ class OptimalPriceResponse(PricingBasis):
 
 
 class SimulatedPrice(BaseModel):
+    """Expected weekly results at one candidate price; units_low/high use the elasticity's 95% interval."""
+
     price: float
     price_change_pct: float
     expected_units: float
@@ -161,10 +185,14 @@ class SimulatedPrice(BaseModel):
 
 
 class SimulateResponse(PricingBasis):
+    """Pricing basis plus one result per candidate price, in the order given."""
+
     results: list[SimulatedPrice]
 
 
 class Recommendation(BaseModel):
+    """A stored catalogue recommendation (default rules) for one product."""
+
     stock_code: str
     description: str | None
     category: str
@@ -179,6 +207,8 @@ class Recommendation(BaseModel):
 
 
 class RecommendationList(BaseModel):
+    """One page of stored recommendations plus the total number matching the filters."""
+
     total: int
     limit: int
     offset: int
@@ -186,6 +216,8 @@ class RecommendationList(BaseModel):
 
 
 class ProductEstimate(BaseModel):
+    """Causal-forest elasticity for one product with its 95% interval."""
+
     stock_code: str
     description: str | None
     category: str
@@ -196,6 +228,8 @@ class ProductEstimate(BaseModel):
 
 
 class ProductEstimateList(BaseModel):
+    """One page of product elasticities plus the total number matching the filters."""
+
     total: int
     limit: int
     offset: int

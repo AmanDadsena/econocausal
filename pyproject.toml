@@ -21,10 +21,16 @@ line-length = 100
 extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
-# pycodestyle, pyflakes, warnings, import order, bugbear, comprehensions, pyupgrade.
-select = ["E", "F", "W", "I", "B", "C4", "UP"]
+# pycodestyle, pyflakes, warnings, import order, bugbear, comprehensions, pyupgrade,
+# missing docstrings.
+select = ["E", "F", "W", "I", "B", "C4", "UP", "D1"]
 # Long lines are allowed where splitting would hurt readability (docstrings, tables, SQL).
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Every public module, class and function in the project code needs a docstring (D1);
+# test names already describe what they check.
+"tests/*" = ["D1"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["econocausal", "api"]
