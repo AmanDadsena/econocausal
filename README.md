@@ -59,6 +59,9 @@ recommend prices.
 
 ## Architecture
 
+Full description with pipeline, estimator, request-flow, database and deployment diagrams:
+[docs/architecture.md](docs/architecture.md)
+
 ```mermaid
 flowchart LR
     A[UCI Online Retail II<br/>Excel, 1.07M rows] -->|download, load| B[parquet]
