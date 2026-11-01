@@ -47,8 +47,8 @@ OLS does not; results available through the API and dashboard.
 
 ## Week 4 (31 Oct – 10 Nov): evaluation, documentation, final review
 
-- [ ] Simulation study for confidence interval coverage
-- [ ] Evaluation results and model card
+- [x] Simulation study for confidence interval coverage
+- [x] Evaluation results and model card
 - [ ] Architecture document
 - [ ] Project report and presentation
 - [ ] README with screenshots and live links

@@ -19,7 +19,7 @@ result exactly. 202 automated tests (84% line coverage).
 - **Robust:** a placebo with shuffled prices gives −0.001, a random fake confounder changes nothing, and
   random halves of the data give −1.23 to −1.27.
 - **Honest uncertainty:** over 100 synthetic datasets, DML's 95% intervals contain the true value 94% of
-  the time (best naive OLS: 0%). Full evaluation: [docs/evaluation.md](docs/evaluation.md)
+  the time (best naive OLS: 0%). Full evaluation: [docs/evaluation.md](docs/evaluation.md) · model card: [docs/model_card.md](docs/model_card.md)
 
 ## Problem
 
