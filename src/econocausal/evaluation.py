@@ -15,8 +15,9 @@ Reported per method:
                   (if mean_se is close to sd_estimates, the standard errors are well calibrated)
 
 Usage:
-    python -m econocausal.evaluation            # 100 datasets
-    python -m econocausal.evaluation --reps 20  # quicker
+    python -m econocausal.evaluation              # 100 datasets
+    python -m econocausal.evaluation --reps 20    # quicker
+    python -m econocausal.evaluation --plot-only  # redraw the figure from saved results
 """
 
 import argparse
@@ -90,12 +91,54 @@ def summarise(runs: pd.DataFrame, truth: float = TRUE_ELASTICITY) -> pd.DataFram
     return pd.DataFrame(rows)
 
 
+def plot_study(runs: pd.DataFrame, truth: float = TRUE_ELASTICITY) -> None:
+    """Save reports/figures/12_coverage_study.png: the spread of estimates for each method,
+    and every DML interval sorted by its estimate, with intervals that miss the truth marked."""
+    import matplotlib.pyplot as plt
+
+    from econocausal.viz import BLUE, GREY, ORANGE, TEXT_MUTED, save_figure, set_style
+
+    set_style()
+    dml = runs[runs["method"] == "dml_manual"].sort_values("estimate").reset_index(drop=True)
+    ols = runs[runs["method"] != "dml_manual"]
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(12, 4.2))
+    bins = np.linspace(min(runs["ci_low"].min(), truth) - 0.02, max(runs["ci_high"].max(), truth) + 0.02, 40)
+    left.hist(ols["estimate"], bins=bins, color=GREY, label="Best naive OLS", alpha=0.9)
+    left.hist(dml["estimate"], bins=bins, color=BLUE, label="Own DML", alpha=0.9)
+    left.axvline(truth, color=TEXT_MUTED, linestyle="--", linewidth=1)
+    left.text(truth, left.get_ylim()[1] * 0.95, f"  true {truth:g}", color=TEXT_MUTED, va="top")
+    left.set_xlabel("Estimated elasticity")
+    left.set_ylabel("Datasets")
+    left.set_title(f"Estimates on {len(dml)} synthetic datasets")
+    left.legend(loc="upper left")
+
+    misses = ~dml["covers"]
+    colors = np.where(misses, ORANGE, BLUE)
+    y = np.arange(len(dml))
+    right.hlines(y, dml["ci_low"], dml["ci_high"], colors=colors, linewidth=1.2)
+    right.scatter(dml["estimate"], y, color=colors, s=6, zorder=3)
+    right.axvline(truth, color=TEXT_MUTED, linestyle="--", linewidth=1)
+    right.set_yticks([])
+    right.set_xlabel("Own DML estimate with 95% interval")
+    right.set_title(f"{(~misses).sum()} of {len(dml)} intervals contain the true value")
+    right.grid(axis="y", visible=False)
+    fig.tight_layout()
+    save_figure(fig, "12_coverage_study")
+
+
 def main(argv: list[str] | None = None) -> None:
     """Run the study, print the summary and save both tables to reports/."""
     parser = argparse.ArgumentParser(description="Confidence-interval coverage study.")
     parser.add_argument("--reps", type=int, default=100, help="number of synthetic datasets")
+    parser.add_argument("--plot-only", action="store_true",
+                        help="redraw the figure from reports/coverage_study_runs.csv")
     args = parser.parse_args(argv)
     warnings.filterwarnings("ignore", category=UserWarning)
+    if args.plot_only:
+        plot_study(pd.read_csv(REPORTS / "coverage_study_runs.csv"))
+        print("Saved reports/figures/12_coverage_study.png")
+        return
 
     start = time.time()
     runs = []
@@ -108,6 +151,7 @@ def main(argv: list[str] | None = None) -> None:
 
     runs.round(6).to_csv(REPORTS / "coverage_study_runs.csv", index=False)
     summary.round(4).to_csv(REPORTS / "coverage_study_summary.csv", index=False)
+    plot_study(runs)
     with pd.option_context("display.float_format", "{:.3f}".format, "display.width", 140):
         print(summary.to_string(index=False))
     print(f"\nDone in {time.time() - start:.0f}s; saved reports/coverage_study_*.csv")

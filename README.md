@@ -10,7 +10,7 @@ Weeks 1–3 complete: data pipeline, EDA, synthetic validation, naive baselines,
 EconML comparison, product-level elasticities (causal forest), robustness checks, price optimizer,
 REST API, five-page dashboard, Docker, CI and deployment configuration. The whole analysis rebuilds
 from the raw data with one command (`python -m econocausal.pipeline`) and reproduces every committed
-result exactly. 200 automated tests (84% line coverage).
+result exactly. 202 automated tests (84% line coverage).
 
 - **Validated:** on synthetic data with a known elasticity of −1.8, DML estimates **−1.806**; every naive
   OLS method misses (−1.15 to −2.91) with confidence intervals that exclude the true value.
@@ -18,6 +18,8 @@ result exactly. 200 automated tests (84% line coverage).
   **1.28%** (DML, 95% CI 1.23%–1.32%). The best naive regression overstates this at 1.53%.
 - **Robust:** a placebo with shuffled prices gives −0.001, a random fake confounder changes nothing, and
   random halves of the data give −1.23 to −1.27.
+- **Honest uncertainty:** over 100 synthetic datasets, DML's 95% intervals contain the true value 94% of
+  the time (best naive OLS: 0%). Full evaluation: [docs/evaluation.md](docs/evaluation.md)
 
 ## Problem
 
@@ -82,7 +84,7 @@ flowchart LR
 | `notebooks/` | EDA and the synthetic-data method comparison |
 | `docs/` | problem statement, data dictionary, findings, design notes, progress, viva notes |
 | `reports/` | figures and result tables |
-| `tests/` | 200 tests (pytest, 84% coverage) |
+| `tests/` | 202 tests (pytest, 84% coverage) |
 
 ## Data
 
