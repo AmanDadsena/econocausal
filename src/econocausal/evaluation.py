@@ -1,0 +1,117 @@
+"""Simulation study: are the 95% confidence intervals honest?
+
+A 95% interval should contain the true value in about 95% of repeated samples. On real data
+this cannot be checked, because the true elasticity is unknown. Here the synthetic generator
+is run many times with different seeds (true elasticity -1.8 every time); for each dataset
+the own DML estimator and the best naive OLS baseline are fitted, and we record whether each
+interval contains -1.8.
+
+Reported per method:
+    coverage      share of intervals that contain the true value (target 0.95)
+    bias          mean(estimate) - true value
+    rmse          root mean squared error of the estimates
+    mean_se       average reported standard error
+    sd_estimates  standard deviation of the estimates across datasets
+                  (if mean_se is close to sd_estimates, the standard errors are well calibrated)
+
+Usage:
+    python -m econocausal.evaluation            # 100 datasets
+    python -m econocausal.evaluation --reps 20  # quicker
+"""
+
+import argparse
+import time
+import warnings
+
+import numpy as np
+import pandas as pd
+from lightgbm import LGBMRegressor
+from scipy import stats
+
+from econocausal.baselines import fit_baseline
+from econocausal.dml import estimate_elasticity
+from econocausal.paths import PROJECT_ROOT
+from econocausal.simulate import TRUE_ELASTICITY, simulate_panel
+
+REPORTS = PROJECT_ROOT / "reports"
+
+# A smaller panel and lighter LightGBM settings than the main analysis keep 100 repetitions
+# to a few minutes; each dataset still has 15,600 product-weeks.
+STUDY_PANEL = {"n_products": 150, "n_weeks": 104}
+
+
+def study_model(seed: int) -> LGBMRegressor:
+    """LightGBM settings for the study (lighter than the main analysis)."""
+    return LGBMRegressor(n_estimators=200, learning_rate=0.08, num_leaves=15,
+                         min_child_samples=40, random_state=seed, n_jobs=4, verbose=-1)
+
+
+def run_one(seed: int) -> list[dict]:
+    """Fit own DML and the best OLS baseline on one synthetic dataset."""
+    df = simulate_panel(seed=seed, **STUDY_PANEL)
+    dml = estimate_elasticity(df, model_y=study_model(seed), model_t=study_model(seed), seed=seed)
+    ols = fit_baseline(df, ["stock_code", "week_start"], ["guest_share", "uk_share"])
+    rows = [
+        {"seed": seed, "method": "dml_manual", "estimate": dml.estimate, "std_error": dml.std_error,
+         "ci_low": dml.ci_low, "ci_high": dml.ci_high},
+        {"seed": seed, "method": "ols_product_week_fe_controls", "estimate": ols["estimate"],
+         "std_error": ols["std_error"], "ci_low": ols["ci_low"], "ci_high": ols["ci_high"]},
+    ]
+    for row in rows:
+        row["covers"] = row["ci_low"] <= TRUE_ELASTICITY <= row["ci_high"]
+    return rows
+
+
+def summarise(runs: pd.DataFrame, truth: float = TRUE_ELASTICITY) -> pd.DataFrame:
+    """Coverage, bias, RMSE and standard-error calibration per method.
+
+    `coverage_ci_low/high` is a 95% Wilson interval for the coverage itself, so with a
+    finite number of repetitions we can say whether coverage is consistent with 95%."""
+    rows = []
+    z = stats.norm.ppf(0.975)
+    for method, part in runs.groupby("method", sort=False):
+        n = len(part)
+        p = part["covers"].mean()
+        centre = (p + z**2 / (2 * n)) / (1 + z**2 / n)
+        half = z * np.sqrt(p * (1 - p) / n + z**2 / (4 * n**2)) / (1 + z**2 / n)
+        errors = part["estimate"] - truth
+        rows.append({
+            "method": method,
+            "datasets": n,
+            "coverage": p,
+            "coverage_ci_low": centre - half,
+            "coverage_ci_high": centre + half,
+            "mean_estimate": part["estimate"].mean(),
+            "bias": errors.mean(),
+            "rmse": float(np.sqrt((errors**2).mean())),
+            "mean_se": part["std_error"].mean(),
+            "sd_estimates": part["estimate"].std(ddof=1),
+        })
+    return pd.DataFrame(rows)
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Run the study, print the summary and save both tables to reports/."""
+    parser = argparse.ArgumentParser(description="Confidence-interval coverage study.")
+    parser.add_argument("--reps", type=int, default=100, help="number of synthetic datasets")
+    args = parser.parse_args(argv)
+    warnings.filterwarnings("ignore", category=UserWarning)
+
+    start = time.time()
+    runs = []
+    for i, seed in enumerate(range(args.reps), start=1):
+        runs += run_one(seed)
+        if i % 10 == 0:
+            print(f"{i}/{args.reps} datasets ({time.time() - start:.0f}s)")
+    runs = pd.DataFrame(runs)
+    summary = summarise(runs)
+
+    runs.round(6).to_csv(REPORTS / "coverage_study_runs.csv", index=False)
+    summary.round(4).to_csv(REPORTS / "coverage_study_summary.csv", index=False)
+    with pd.option_context("display.float_format", "{:.3f}".format, "display.width", 140):
+        print(summary.to_string(index=False))
+    print(f"\nDone in {time.time() - start:.0f}s; saved reports/coverage_study_*.csv")
+
+
+if __name__ == "__main__":
+    main()
