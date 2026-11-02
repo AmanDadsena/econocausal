@@ -49,7 +49,7 @@ OLS does not; results available through the API and dashboard.
 
 - [x] Simulation study for confidence interval coverage
 - [x] Evaluation results and model card
-- [ ] Architecture document
+- [x] Architecture document
 - [ ] Project report and presentation
 - [ ] README with screenshots and live links
 - [ ] Final clean-up and release
